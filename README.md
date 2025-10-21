@@ -14,6 +14,53 @@ All companies would have their job application on our site. Each application wou
 
 On the company side, you would be able to log in to the app, and for each position that you are hiring for, you can view each resume and applicant. Depending on people's offer deadlines, you might be able to view certain people first. The whole interview process can be set up on the site, so that you don't have to email people back and forth about interviews.
 
+## Profile & Resume Management
+
+This project now includes a Profile page that lets candidates manage personal information and a resume file.
+
+Path: `src/app/profile/page.tsx`
+
+APIs:
+- `PUT /api/profile` — update `name`, `email`, `education`
+- `GET /api/profile` — fetch current profile
+- `POST /api/resume` — upload or replace resume (PDF, DOC, DOCX; max 5MB)
+- `DELETE /api/resume` — delete current resume
+
+Local storage is implemented using the filesystem with files saved under `public/uploads/` and profile data in `data/profile.json`. See storage helpers in `src/lib/storage.ts`.
+
+### Configuration
+
+- `UPLOAD_DIR`: override default upload directory. Defaults to `<project>/public/uploads`.
+- `PROFILE_JSON`: override profile JSON path. Defaults to `<project>/data/profile.json`.
+
+S3: To use S3 instead of local storage, replace the implementations in `src/lib/storage.ts` (`saveResumeFile`, `deleteResumeFileIfExists`, and `getPublicUrlForSavedFile`) with S3 SDK calls (e.g., `@aws-sdk/client-s3`). Keep validations (`MAX_RESUME_BYTES`, `isAllowedResumeType`) the same.
+
+### Test Plan
+
+- [x] Test successful resume upload.
+- [x] Test invalid resume upload via invalid file type.
+- [x] Test other form details being filled out correctly.
+- [x] Test other form details being filled out with incorrect field type.
+- [x] Test deleting and replacing resume.
+- [x] Test uploading files that are too large.
+
+Automated tests cover validation helpers in `src/lib/storage.test.ts` (MIME type allowlist, size limit, filename sanitization, public URL generation).
+
+### Running Tests
+
+1. Install dependencies (Vitest):
+   - `npm install`
+2. Run tests:
+   - `npm run test`
+
+### Using the Feature
+
+1. Start the dev server: `npm run dev`.
+2. Navigate to `/profile` using the top nav.
+3. Update Name, Email, Education and click Save.
+4. Upload a resume using PDF/DOC/DOCX up to 5MB.
+5. View, delete, and replace the resume as needed.
+
 ## The Implementation
 
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
