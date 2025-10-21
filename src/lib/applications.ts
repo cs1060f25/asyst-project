@@ -42,18 +42,23 @@ export async function writeApplications(apps: Application[]) {
 }
 
 export function getApplicationStatus(apps: Application[], jobId: string): ApplicationStatus | null {
-  const app = apps.find((a) => a.jobId === jobId);
+  const id = jobId.trim();
+  const app = apps.find((a) => a.jobId === id);
   return app ? app.status : null;
 }
 
 export async function applyToJob(jobId: string): Promise<{ created: boolean; status: ApplicationStatus }> {
+  const id = jobId.trim();
+  if (!id) {
+    throw new Error("INVALID_JOB_ID");
+  }
   const apps = await readApplications();
-  const existing = apps.find((a) => a.jobId === jobId);
+  const existing = apps.find((a) => a.jobId === id);
   if (existing) {
     return { created: false, status: existing.status };
   }
   const newApp: Application = {
-    jobId,
+    jobId: id,
     status: "Applied",
     appliedAt: new Date().toISOString(),
   };
