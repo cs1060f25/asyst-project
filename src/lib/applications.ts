@@ -8,7 +8,7 @@ export type Job = {
   location: string;
 };
 
-export type ApplicationStatus = "Applied" | "Under Review";
+export type ApplicationStatus = "Applied" | "Under Review" | "Interview" | "Offer" | "Hired" | "Rejected";
 
 export type Application = {
   jobId: string;
@@ -65,4 +65,19 @@ export async function applyToJob(jobId: string): Promise<{ created: boolean; sta
   const updated = [...apps, newApp];
   await writeApplications(updated);
   return { created: true, status: newApp.status };
+}
+
+export async function updateApplicationStatus(jobId: string, status: ApplicationStatus): Promise<{ success: boolean; application?: Application }> {
+  const id = jobId.trim();
+  if (!id) {
+    throw new Error("INVALID_JOB_ID");
+  }
+  const apps = await readApplications();
+  const appIndex = apps.findIndex((a) => a.jobId === id);
+  if (appIndex === -1) {
+    return { success: false };
+  }
+  apps[appIndex].status = status;
+  await writeApplications(apps);
+  return { success: true, application: apps[appIndex] };
 }
