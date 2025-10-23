@@ -13,7 +13,7 @@ type Job = {
 
 type Application = {
   jobId: string;
-  status: "Applied" | "Under Review";
+  status: "Applied" | "Under Review" | "Interview" | "Offer" | "Hired" | "Rejected";
   appliedAt: string;
 };
 
@@ -61,6 +61,18 @@ export default function CandidatePage() {
 
   function getStatus(jobId: string) {
     return apps.find((a) => a.jobId === jobId)?.status ?? null;
+  }
+
+  function getStatusColor(status: Application["status"]) {
+    switch (status) {
+      case "Applied": return "bg-blue-100 text-blue-800 border-blue-200";
+      case "Under Review": return "bg-yellow-100 text-yellow-800 border-yellow-200";
+      case "Interview": return "bg-purple-100 text-purple-800 border-purple-200";
+      case "Offer": return "bg-green-100 text-green-800 border-green-200";
+      case "Hired": return "bg-green-200 text-green-900 border-green-300";
+      case "Rejected": return "bg-red-100 text-red-800 border-red-200";
+      default: return "bg-gray-100 text-gray-700 border-gray-200";
+    }
   }
 
   async function apply(jobId: string) {
@@ -122,8 +134,8 @@ export default function CandidatePage() {
                 </div>
               </div>
               <div className="flex items-center gap-3">
-                {isApplied ? (
-                  <span className="text-xs px-2 py-1 rounded bg-gray-100 border text-gray-700">{status}</span>
+                {isApplied && status ? (
+                  <span className={`text-xs px-2 py-1 rounded border font-medium ${getStatusColor(status)}`}>{status}</span>
                 ) : null}
                 <Button
                   onClick={() => apply(job.id)}
