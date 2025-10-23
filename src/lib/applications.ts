@@ -81,3 +81,36 @@ export async function updateApplicationStatus(jobId: string, status: Application
   await writeApplications(apps);
   return { success: true, application: apps[appIndex] };
 }
+
+export type ApplicationWithCandidate = Application & {
+  candidateInfo?: {
+    name: string;
+    email: string;
+    offerDeadline: string | null;
+    resumeUrl: string | null;
+  };
+};
+
+export async function getApplicationsWithCandidateInfo(): Promise<ApplicationWithCandidate[]> {
+  const apps = await readApplications();
+  
+  // For now, we'll use a single profile since this is a demo
+  // In a real app, each application would be linked to a specific candidate
+  try {
+    const { readProfile } = await import("./storage");
+    const profile = await readProfile();
+    
+    return apps.map(app => ({
+      ...app,
+      candidateInfo: {
+        name: profile.name || "Anonymous",
+        email: profile.email || "",
+        offerDeadline: profile.offerDeadline,
+        resumeUrl: profile.resume?.url || null,
+      }
+    }));
+  } catch {
+    // If profile reading fails, return apps without candidate info
+    return apps;
+  }
+}

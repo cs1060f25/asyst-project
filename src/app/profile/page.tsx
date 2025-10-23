@@ -24,6 +24,7 @@ type Profile = {
   email: string;
   education: string;
   resume: ResumeInfo | null;
+  offerDeadline: string | null;
 };
 
 export default function ProfilePage() {
@@ -32,6 +33,7 @@ export default function ProfilePage() {
     email: "",
     education: "",
     resume: null,
+    offerDeadline: null,
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -77,6 +79,7 @@ export default function ProfilePage() {
           name: profile.name,
           email: profile.email,
           education: profile.education,
+          offerDeadline: profile.offerDeadline,
         }),
       });
       if (!res.ok) {
@@ -184,6 +187,23 @@ export default function ProfilePage() {
             placeholder="B.S. in Computer Science, Stanford University"
             onChange={(e) => setProfile((p) => ({ ...p, education: e.target.value }))}
           />
+        </div>
+        <div className="grid gap-2">
+          <label className="text-sm font-medium">Offer Deadline</label>
+          <Input
+            type="date"
+            value={profile.offerDeadline ? profile.offerDeadline.split('T')[0] : ""}
+            onChange={(e) => {
+              const dateValue = e.target.value;
+              setProfile((p) => ({ 
+                ...p, 
+                offerDeadline: dateValue ? new Date(dateValue).toISOString() : null 
+              }));
+            }}
+          />
+          <p className="text-xs text-muted-foreground">
+            Set a deadline for competing offers to help recruiters prioritize your applications.
+          </p>
         </div>
         {error && <p className="text-sm text-red-600">{error}</p>}
         <div className="flex gap-2">

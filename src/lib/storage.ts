@@ -19,6 +19,7 @@ export type Profile = {
   email: string;
   education: string;
   resume: ResumeInfo | null;
+  offerDeadline: string | null; // ISO date string
 };
 
 export async function ensureDirs() {
@@ -38,9 +39,17 @@ export function getProfilePath() {
 export async function readProfile(): Promise<Profile> {
   try {
     const raw = await fs.readFile(getProfilePath(), "utf-8");
-    return JSON.parse(raw);
+    const profile = JSON.parse(raw);
+    // Ensure backward compatibility by adding missing fields
+    return {
+      name: profile.name || "",
+      email: profile.email || "",
+      education: profile.education || "",
+      resume: profile.resume || null,
+      offerDeadline: profile.offerDeadline || null,
+    };
   } catch (e: any) {
-    return { name: "", email: "", education: "", resume: null };
+    return { name: "", email: "", education: "", resume: null, offerDeadline: null };
   }
 }
 
