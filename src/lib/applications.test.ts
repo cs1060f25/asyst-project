@@ -6,7 +6,10 @@ import {
   readApplications,
   writeApplications,
   getApplicationStatus,
+  updateApplicationStatus,
+  getApplicationsWithCandidateInfo,
   type Application,
+  type ApplicationStatus,
 } from "./applications";
 
 const tmpDir = path.join(process.cwd(), ".tmp-test");
@@ -82,5 +85,61 @@ describe("applications logic", () => {
     expect(getApplicationStatus(apps, "job-3")).toBe("Applied");
     expect(getApplicationStatus(apps, "job-4")).toBe("Under Review");
     expect(getApplicationStatus(apps, "job-unknown")).toBeNull();
+  });
+
+  it("updates application status successfully", async () => {
+    // Create an application first
+    await applyToJob("job-5");
+    
+    // Update its status
+    const result = await updateApplicationStatus("job-5", "Under Review");
+    expect(result.success).toBe(true);
+    expect(result.application?.status).toBe("Under Review");
+    
+    // Verify the update persisted
+    const apps = await readApplications();
+    const app = apps.find(a => a.jobId === "job-5");
+    expect(app?.status).toBe("Under Review");
+  });
+
+  it("fails to update non-existent application", async () => {
+    const result = await updateApplicationStatus("non-existent", "Interview");
+    expect(result.success).toBe(false);
+    expect(result.application).toBeUndefined();
+  });
+
+  it("rejects invalid job ID for status update", async () => {
+    await expect(updateApplicationStatus("", "Interview")).rejects.toBeTruthy();
+    await expect(updateApplicationStatus("   ", "Interview")).rejects.toBeTruthy();
+  });
+
+  it("supports all application status types", async () => {
+    const statuses: ApplicationStatus[] = ["Applied", "Under Review", "Interview", "Offer", "Hired", "Rejected"];
+    
+    await applyToJob("job-6");
+    
+    for (const status of statuses) {
+      const result = await updateApplicationStatus("job-6", status);
+      expect(result.success).toBe(true);
+      expect(result.application?.status).toBe(status);
+    }
+  });
+
+  it("gets applications with candidate info when profile exists", async () => {
+    // Create some test applications
+    await applyToJob("job-7");
+    await applyToJob("job-8");
+    
+    // This test assumes the profile system is working
+    // In a real test, we'd mock the profile reading
+    const appsWithCandidate = await getApplicationsWithCandidateInfo();
+    
+    expect(appsWithCandidate.length).toBe(2);
+    // Each application should have the same structure as before
+    expect(appsWithCandidate[0]).toHaveProperty("jobId");
+    expect(appsWithCandidate[0]).toHaveProperty("status");
+    expect(appsWithCandidate[0]).toHaveProperty("appliedAt");
+    // And may have candidate info (depending on profile availability)
+    expect(appsWithCandidate[0]).toHaveProperty("candidateInfo");
   });
 });

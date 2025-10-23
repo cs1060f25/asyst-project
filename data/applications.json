@@ -1,0 +1,12 @@
+[
+  {
+    "jobId": "job-1",
+    "status": "Applied",
+    "appliedAt": "2025-10-23T20:03:41.350Z"
+  },
+  {
+    "jobId": "job-2",
+    "status": "Applied",
+    "appliedAt": "2025-10-23T20:03:52.098Z"
+  }
+]

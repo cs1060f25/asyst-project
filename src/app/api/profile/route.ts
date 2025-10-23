@@ -25,6 +25,15 @@ export async function PUT(req: NextRequest) {
     if (offerDeadline && !isValidDate(offerDeadline)) {
       return NextResponse.json({ error: "INVALID_OFFER_DEADLINE" }, { status: 400 });
     }
+    
+    // Ensure offer deadline is in the future
+    if (offerDeadline) {
+      const deadlineDate = new Date(offerDeadline);
+      const now = new Date();
+      if (deadlineDate <= now) {
+        return NextResponse.json({ error: "OFFER_DEADLINE_MUST_BE_FUTURE" }, { status: 400 });
+      }
+    }
 
     const existing = await readProfile();
     const updated: Profile = {

@@ -193,6 +193,7 @@ export default function ProfilePage() {
           <Input
             type="date"
             value={profile.offerDeadline ? profile.offerDeadline.split('T')[0] : ""}
+            min={new Date().toISOString().split('T')[0]} // Prevent selecting past dates
             onChange={(e) => {
               const dateValue = e.target.value;
               setProfile((p) => ({ 
