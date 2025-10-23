@@ -81,6 +81,19 @@ export default function RecruiterPage() {
     };
   }, []);
 
+  const getDeadlineUrgency = (deadline: string | null) => {
+    if (!deadline) return null;
+    
+    const now = new Date();
+    const deadlineDate = new Date(deadline);
+    const daysUntil = Math.ceil((deadlineDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    
+    if (daysUntil < 0) return { level: "expired", text: "Expired", color: "bg-red-200 text-red-900" };
+    if (daysUntil <= 3) return { level: "urgent", text: `${daysUntil}d left`, color: "bg-red-100 text-red-800" };
+    if (daysUntil <= 7) return { level: "soon", text: `${daysUntil}d left`, color: "bg-orange-100 text-orange-800" };
+    return { level: "normal", text: `${daysUntil}d left`, color: "bg-gray-100 text-gray-700" };
+  };
+
   const filteredApplications = useMemo(() => {
     let filtered = applications;
     
@@ -158,19 +171,6 @@ export default function RecruiterPage() {
       case "Rejected": return "bg-red-100 text-red-800";
       default: return "bg-gray-100 text-gray-800";
     }
-  };
-
-  const getDeadlineUrgency = (deadline: string | null) => {
-    if (!deadline) return null;
-    
-    const now = new Date();
-    const deadlineDate = new Date(deadline);
-    const daysUntil = Math.ceil((deadlineDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-    
-    if (daysUntil < 0) return { level: "expired", text: "Expired", color: "bg-red-200 text-red-900" };
-    if (daysUntil <= 3) return { level: "urgent", text: `${daysUntil}d left`, color: "bg-red-100 text-red-800" };
-    if (daysUntil <= 7) return { level: "soon", text: `${daysUntil}d left`, color: "bg-orange-100 text-orange-800" };
-    return { level: "normal", text: `${daysUntil}d left`, color: "bg-gray-100 text-gray-700" };
   };
 
   if (loading) {
