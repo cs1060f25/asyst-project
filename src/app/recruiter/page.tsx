@@ -35,6 +35,11 @@ export default function RecruiterPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [updating, setUpdating] = useState<string | null>(null);
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -95,6 +100,11 @@ export default function RecruiterPage() {
     }
     
     // Sort by deadline urgency first, then by application date
+    // Only calculate urgency on client side to avoid hydration mismatch
+    if (!isMounted) {
+      return filtered;
+    }
+    
     return filtered.sort((a, b) => {
       const urgencyA = getDeadlineUrgency(a.candidateInfo?.offerDeadline || null);
       const urgencyB = getDeadlineUrgency(b.candidateInfo?.offerDeadline || null);
@@ -111,7 +121,7 @@ export default function RecruiterPage() {
       // If same urgency level, sort by application date (newest first)
       return new Date(b.appliedAt).getTime() - new Date(a.appliedAt).getTime();
     });
-  }, [applications, searchQuery, statusFilter]);
+  }, [applications, searchQuery, statusFilter, isMounted]);
 
   const updateStatus = async (jobId: string, newStatus: Application["status"]) => {
     setUpdating(jobId);
@@ -220,7 +230,7 @@ export default function RecruiterPage() {
             </div>
           ) : (
             filteredApplications.map((app) => {
-              const urgency = getDeadlineUrgency(app.candidateInfo?.offerDeadline || null);
+              const urgency = isMounted ? getDeadlineUrgency(app.candidateInfo?.offerDeadline || null) : null;
               return (
                 <div key={app.jobId} className="px-6 py-4 hover:bg-gray-50">
                   <div className="grid grid-cols-12 gap-4 items-center">
