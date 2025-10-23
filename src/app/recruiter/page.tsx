@@ -16,6 +16,12 @@ type Application = {
   jobId: string;
   status: "Applied" | "Under Review" | "Interview" | "Offer" | "Hired" | "Rejected";
   appliedAt: string;
+  candidateInfo?: {
+    name: string;
+    email: string;
+    offerDeadline: string | null;
+    resumeUrl: string | null;
+  };
 };
 
 type ApplicationWithJob = Application & {
@@ -35,7 +41,7 @@ export default function RecruiterPage() {
     (async () => {
       try {
         const [appsRes, jobsRes] = await Promise.all([
-          fetch("/api/applications", { cache: "no-store" }),
+          fetch("/api/applications/with-candidates", { cache: "no-store" }),
           fetch("/api/jobs", { cache: "no-store" }),
         ]);
         
@@ -88,7 +94,23 @@ export default function RecruiterPage() {
       filtered = filtered.filter(app => app.status === statusFilter);
     }
     
-    return filtered.sort((a, b) => new Date(b.appliedAt).getTime() - new Date(a.appliedAt).getTime());
+    // Sort by deadline urgency first, then by application date
+    return filtered.sort((a, b) => {
+      const urgencyA = getDeadlineUrgency(a.candidateInfo?.offerDeadline || null);
+      const urgencyB = getDeadlineUrgency(b.candidateInfo?.offerDeadline || null);
+      
+      // Priority order: expired > urgent > soon > normal > no deadline
+      const urgencyOrder = { expired: 0, urgent: 1, soon: 2, normal: 3 };
+      const scoreA = urgencyA ? urgencyOrder[urgencyA.level as keyof typeof urgencyOrder] : 4;
+      const scoreB = urgencyB ? urgencyOrder[urgencyB.level as keyof typeof urgencyOrder] : 4;
+      
+      if (scoreA !== scoreB) {
+        return scoreA - scoreB;
+      }
+      
+      // If same urgency level, sort by application date (newest first)
+      return new Date(b.appliedAt).getTime() - new Date(a.appliedAt).getTime();
+    });
   }, [applications, searchQuery, statusFilter]);
 
   const updateStatus = async (jobId: string, newStatus: Application["status"]) => {
@@ -126,6 +148,19 @@ export default function RecruiterPage() {
       case "Rejected": return "bg-red-100 text-red-800";
       default: return "bg-gray-100 text-gray-800";
     }
+  };
+
+  const getDeadlineUrgency = (deadline: string | null) => {
+    if (!deadline) return null;
+    
+    const now = new Date();
+    const deadlineDate = new Date(deadline);
+    const daysUntil = Math.ceil((deadlineDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    
+    if (daysUntil < 0) return { level: "expired", text: "Expired", color: "bg-red-200 text-red-900" };
+    if (daysUntil <= 3) return { level: "urgent", text: `${daysUntil}d left`, color: "bg-red-100 text-red-800" };
+    if (daysUntil <= 7) return { level: "soon", text: `${daysUntil}d left`, color: "bg-orange-100 text-orange-800" };
+    return { level: "normal", text: `${daysUntil}d left`, color: "bg-gray-100 text-gray-700" };
   };
 
   if (loading) {
@@ -169,11 +204,12 @@ export default function RecruiterPage() {
       <div className="border rounded-lg overflow-hidden">
         <div className="bg-gray-50 px-6 py-3 border-b">
           <div className="grid grid-cols-12 gap-4 text-sm font-medium text-gray-700">
-            <div className="col-span-3">Job Title</div>
-            <div className="col-span-2">Company</div>
+            <div className="col-span-2">Candidate</div>
+            <div className="col-span-2">Job Title</div>
             <div className="col-span-2">Applied Date</div>
+            <div className="col-span-2">Offer Deadline</div>
             <div className="col-span-2">Current Status</div>
-            <div className="col-span-3">Actions</div>
+            <div className="col-span-2">Actions</div>
           </div>
         </div>
         
@@ -183,44 +219,69 @@ export default function RecruiterPage() {
               {applications.length === 0 ? "No applications yet." : "No applications match your filters."}
             </div>
           ) : (
-            filteredApplications.map((app) => (
-              <div key={app.jobId} className="px-6 py-4 hover:bg-gray-50">
-                <div className="grid grid-cols-12 gap-4 items-center">
-                  <div className="col-span-3">
-                    <div className="font-medium">{app.job.title}</div>
-                    <div className="text-sm text-gray-500">{app.job.location}</div>
-                  </div>
-                  <div className="col-span-2 text-sm">{app.job.company}</div>
-                  <div className="col-span-2 text-sm">
-                    {new Date(app.appliedAt).toLocaleDateString()}
-                  </div>
-                  <div className="col-span-2">
-                    <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(app.status)}`}>
-                      {app.status}
-                    </span>
-                  </div>
-                  <div className="col-span-3">
-                    <Select
-                      value={app.status}
-                      onValueChange={(value) => updateStatus(app.jobId, value as Application["status"])}
-                      disabled={updating === app.jobId}
-                    >
-                      <SelectTrigger className="w-full">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Applied">Applied</SelectItem>
-                        <SelectItem value="Under Review">Under Review</SelectItem>
-                        <SelectItem value="Interview">Interview</SelectItem>
-                        <SelectItem value="Offer">Offer</SelectItem>
-                        <SelectItem value="Hired">Hired</SelectItem>
-                        <SelectItem value="Rejected">Rejected</SelectItem>
-                      </SelectContent>
-                    </Select>
+            filteredApplications.map((app) => {
+              const urgency = getDeadlineUrgency(app.candidateInfo?.offerDeadline || null);
+              return (
+                <div key={app.jobId} className="px-6 py-4 hover:bg-gray-50">
+                  <div className="grid grid-cols-12 gap-4 items-center">
+                    <div className="col-span-2">
+                      <div className="font-medium">{app.candidateInfo?.name || "Anonymous"}</div>
+                      <div className="text-sm text-gray-500">{app.candidateInfo?.email || ""}</div>
+                      {app.candidateInfo?.resumeUrl && (
+                        <a 
+                          href={app.candidateInfo.resumeUrl} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-xs text-blue-600 hover:underline"
+                        >
+                          View Resume
+                        </a>
+                      )}
+                    </div>
+                    <div className="col-span-2">
+                      <div className="font-medium">{app.job.title}</div>
+                      <div className="text-sm text-gray-500">{app.job.company} • {app.job.location}</div>
+                    </div>
+                    <div className="col-span-2 text-sm">
+                      {new Date(app.appliedAt).toLocaleDateString()}
+                    </div>
+                    <div className="col-span-2">
+                      {urgency ? (
+                        <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${urgency.color}`}>
+                          {urgency.text}
+                        </span>
+                      ) : (
+                        <span className="text-xs text-gray-400">No deadline</span>
+                      )}
+                    </div>
+                    <div className="col-span-2">
+                      <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(app.status)}`}>
+                        {app.status}
+                      </span>
+                    </div>
+                    <div className="col-span-2">
+                      <Select
+                        value={app.status}
+                        onValueChange={(value) => updateStatus(app.jobId, value as Application["status"])}
+                        disabled={updating === app.jobId}
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Applied">Applied</SelectItem>
+                          <SelectItem value="Under Review">Under Review</SelectItem>
+                          <SelectItem value="Interview">Interview</SelectItem>
+                          <SelectItem value="Offer">Offer</SelectItem>
+                          <SelectItem value="Hired">Hired</SelectItem>
+                          <SelectItem value="Rejected">Rejected</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
       </div>
