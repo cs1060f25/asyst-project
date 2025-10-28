@@ -7,35 +7,9 @@ import type {
   Certification 
 } from '@/lib/types/database';
 
-// Mock Supabase client
-const mockSupabaseClient = {
-  from: vi.fn(() => ({
-    select: vi.fn(() => ({
-      eq: vi.fn(() => ({
-        single: vi.fn()
-      }))
-    })),
-    insert: vi.fn(() => ({
-      select: vi.fn(() => ({
-        single: vi.fn()
-      }))
-    })),
-    update: vi.fn(() => ({
-      eq: vi.fn(() => ({
-        select: vi.fn(() => ({
-          single: vi.fn()
-        }))
-      }))
-    })),
-    delete: vi.fn(() => ({
-      eq: vi.fn()
-    }))
-  }))
-};
-
 // Mock the Supabase server client
 vi.mock('@/lib/supabase/server', () => ({
-  createClient: vi.fn(() => Promise.resolve(mockSupabaseClient))
+  createClient: vi.fn()
 }));
 
 // Import after mocking
@@ -45,6 +19,7 @@ import {
   updateCandidateProfile,
   deleteCandidateProfile,
 } from '@/lib/storage';
+import { createClient } from '@/lib/supabase/server';
 
 describe('Candidate Profile Database Operations', () => {
   const mockUserId = 'test-user-id-123';
@@ -84,15 +59,39 @@ describe('Candidate Profile Database Operations', () => {
     updated_at: '2024-01-01T00:00:00Z'
   };
 
+  let mockSupabaseClient: any;
+
   beforeEach(() => {
-    vi.clearAllMocks();
+    // Create a fresh mock for each test with proper method chaining
+    const mockSingle = vi.fn();
+    const mockEq = vi.fn(() => ({ single: mockSingle }));
+    const mockSelect = vi.fn(() => ({ eq: mockEq }));
+    const mockInsert = vi.fn(() => ({ select: vi.fn(() => ({ single: mockSingle })) }));
+    const mockUpdate = vi.fn(() => ({ eq: vi.fn(() => ({ select: vi.fn(() => ({ single: mockSingle })) })) }));
+    const mockDelete = vi.fn(() => ({ eq: vi.fn() }));
+
+    mockSupabaseClient = {
+      from: vi.fn(() => ({
+        select: mockSelect,
+        insert: mockInsert,
+        update: mockUpdate,
+        delete: mockDelete
+      })),
+      mockSingle,
+      mockEq,
+      mockSelect,
+      mockInsert,
+      mockUpdate,
+      mockDelete
+    };
+
+    (createClient as any).mockResolvedValue(mockSupabaseClient);
   });
 
   describe('getCandidateProfile', () => {
     it('should return candidate profile when found', async () => {
       // Mock successful response
-      const mockSingle = mockSupabaseClient.from().select().eq().single;
-      mockSingle.mockResolvedValueOnce({
+      mockSupabaseClient.mockSingle.mockResolvedValueOnce({
         data: mockCandidateProfile,
         error: null
       });
@@ -105,8 +104,7 @@ describe('Candidate Profile Database Operations', () => {
 
     it('should return null when profile not found', async () => {
       // Mock no rows response
-      const mockSingle = mockSupabaseClient.from().select().eq().single;
-      mockSingle.mockResolvedValueOnce({
+      mockSupabaseClient.mockSingle.mockResolvedValueOnce({
         data: null,
         error: { code: 'PGRST116' }
       });
@@ -118,8 +116,7 @@ describe('Candidate Profile Database Operations', () => {
 
     it('should throw error on database error', async () => {
       // Mock database error
-      const mockSingle = mockSupabaseClient.from().select().eq().single;
-      mockSingle.mockResolvedValueOnce({
+      mockSupabaseClient.mockSingle.mockResolvedValueOnce({
         data: null,
         error: { message: 'Database connection failed' }
       });
@@ -140,8 +137,7 @@ describe('Candidate Profile Database Operations', () => {
       };
 
       // Mock successful creation
-      const mockSingle = mockSupabaseClient.from().insert().select().single;
-      mockSingle.mockResolvedValueOnce({
+      mockSupabaseClient.mockSingle.mockResolvedValueOnce({
         data: mockCandidateProfile,
         error: null
       });
@@ -170,8 +166,7 @@ describe('Candidate Profile Database Operations', () => {
       };
 
       // Mock successful creation
-      const mockSingle = mockSupabaseClient.from().insert().select().single;
-      mockSingle.mockResolvedValueOnce({
+      mockSupabaseClient.mockSingle.mockResolvedValueOnce({
         data: mockCandidateProfile,
         error: null
       });
@@ -189,8 +184,7 @@ describe('Candidate Profile Database Operations', () => {
       };
 
       // Mock creation error
-      const mockSingle = mockSupabaseClient.from().insert().select().single;
-      mockSingle.mockResolvedValueOnce({
+      mockSupabaseClient.mockSingle.mockResolvedValueOnce({
         data: null,
         error: { message: 'Duplicate email' }
       });
@@ -207,8 +201,7 @@ describe('Candidate Profile Database Operations', () => {
       };
 
       // Mock successful update
-      const mockSingle = mockSupabaseClient.from().update().eq().select().single;
-      mockSingle.mockResolvedValueOnce({
+      mockSupabaseClient.mockSingle.mockResolvedValueOnce({
         data: { ...mockCandidateProfile, ...updates },
         error: null
       });
@@ -227,8 +220,7 @@ describe('Candidate Profile Database Operations', () => {
       };
 
       // Mock successful update
-      const mockSingle = mockSupabaseClient.from().update().eq().select().single;
-      mockSingle.mockResolvedValueOnce({
+      mockSupabaseClient.mockSingle.mockResolvedValueOnce({
         data: { ...mockCandidateProfile, ...partialUpdates },
         error: null
       });
@@ -245,8 +237,7 @@ describe('Candidate Profile Database Operations', () => {
       };
 
       // Mock update error
-      const mockSingle = mockSupabaseClient.from().update().eq().select().single;
-      mockSingle.mockResolvedValueOnce({
+      mockSupabaseClient.mockSingle.mockResolvedValueOnce({
         data: null,
         error: { message: 'Invalid email format' }
       });
@@ -258,8 +249,11 @@ describe('Candidate Profile Database Operations', () => {
   describe('deleteCandidateProfile', () => {
     it('should delete candidate profile successfully', async () => {
       // Mock successful deletion
-      const mockEq = mockSupabaseClient.from().delete().eq;
-      mockEq.mockResolvedValueOnce({
+      const mockDeleteEq = vi.fn();
+      mockSupabaseClient.mockDelete.mockReturnValueOnce({
+        eq: mockDeleteEq
+      });
+      mockDeleteEq.mockResolvedValueOnce({
         data: null,
         error: null
       });
@@ -267,13 +261,16 @@ describe('Candidate Profile Database Operations', () => {
       await deleteCandidateProfile(mockUserId);
 
       expect(mockSupabaseClient.from).toHaveBeenCalledWith('candidate_profiles');
-      expect(mockEq).toHaveBeenCalledWith('user_id', mockUserId);
+      expect(mockDeleteEq).toHaveBeenCalledWith('user_id', mockUserId);
     });
 
     it('should throw error on deletion failure', async () => {
       // Mock deletion error
-      const mockEq = mockSupabaseClient.from().delete().eq;
-      mockEq.mockResolvedValueOnce({
+      const mockDeleteEq = vi.fn();
+      mockSupabaseClient.mockDelete.mockReturnValueOnce({
+        eq: mockDeleteEq
+      });
+      mockDeleteEq.mockResolvedValueOnce({
         data: null,
         error: { message: 'Profile not found' }
       });
@@ -291,8 +288,7 @@ describe('Candidate Profile Database Operations', () => {
         skills: []
       };
 
-      const mockSingle = mockSupabaseClient.from().insert().select().single;
-      mockSingle.mockResolvedValueOnce({
+      mockSupabaseClient.mockSingle.mockResolvedValueOnce({
         data: { ...mockCandidateProfile, skills: [] },
         error: null
       });
@@ -321,8 +317,7 @@ describe('Candidate Profile Database Operations', () => {
         experience: multipleExperiences
       };
 
-      const mockSingle = mockSupabaseClient.from().insert().select().single;
-      mockSingle.mockResolvedValueOnce({
+      mockSupabaseClient.mockSingle.mockResolvedValueOnce({
         data: { ...mockCandidateProfile, experience: multipleExperiences },
         error: null
       });
@@ -347,8 +342,7 @@ describe('Candidate Profile Database Operations', () => {
         offer_deadline: null
       };
 
-      const mockSingle = mockSupabaseClient.from().insert().select().single;
-      mockSingle.mockResolvedValueOnce({
+      mockSupabaseClient.mockSingle.mockResolvedValueOnce({
         data: { ...mockCandidateProfile, ...profileInsert },
         error: null
       });
@@ -358,6 +352,83 @@ describe('Candidate Profile Database Operations', () => {
       expect(result.phone).toBeNull();
       expect(result.education).toBeNull();
       expect(result.resume_url).toBeNull();
+    });
+  });
+
+  describe('Edge cases and irregular data', () => {
+    it('should handle profile with empty strings', async () => {
+      const profileInsert: CandidateProfileInsert = {
+        user_id: mockUserId,
+        name: 'Test User',
+        email: 'test@example.com',
+        phone: '',
+        education: '',
+        skills: ['', 'valid-skill', ''],
+        experience: [],
+        certifications: []
+      };
+
+      mockSupabaseClient.mockSingle.mockResolvedValueOnce({
+        data: { ...mockCandidateProfile, ...profileInsert },
+        error: null
+      });
+
+      const result = await createCandidateProfile(profileInsert);
+
+      expect(result.phone).toBe('');
+      expect(result.education).toBe('');
+      expect(result.skills).toEqual(['', 'valid-skill', '']);
+    });
+
+    it('should handle nested JSON with null values', async () => {
+      const experienceWithNulls: WorkExperience[] = [
+        {
+          company: 'Test Company',
+          title: 'Engineer',
+          start_date: '2020-01',
+          end_date: null,
+          description: ''
+        }
+      ];
+
+      const profileInsert: CandidateProfileInsert = {
+        user_id: mockUserId,
+        name: 'Test User',
+        email: 'test@example.com',
+        experience: experienceWithNulls
+      };
+
+      mockSupabaseClient.mockSingle.mockResolvedValueOnce({
+        data: { ...mockCandidateProfile, experience: experienceWithNulls },
+        error: null
+      });
+
+      const result = await createCandidateProfile(profileInsert);
+
+      expect(result.experience[0].end_date).toBeNull();
+      expect(result.experience[0].description).toBe('');
+    });
+
+    it('should handle large skills array', async () => {
+      const largeSkillsArray = Array.from({ length: 20 }, (_, i) => `skill-${i}`);
+
+      const profileInsert: CandidateProfileInsert = {
+        user_id: mockUserId,
+        name: 'Test User',
+        email: 'test@example.com',
+        skills: largeSkillsArray
+      };
+
+      mockSupabaseClient.mockSingle.mockResolvedValueOnce({
+        data: { ...mockCandidateProfile, skills: largeSkillsArray },
+        error: null
+      });
+
+      const result = await createCandidateProfile(profileInsert);
+
+      expect(result.skills).toHaveLength(20);
+      expect(result.skills[0]).toBe('skill-0');
+      expect(result.skills[19]).toBe('skill-19');
     });
   });
 });
