@@ -1,5 +1,11 @@
 import { promises as fs } from "fs";
 import path from "path";
+import { createClient } from "@/lib/supabase/server";
+import type { 
+  CandidateProfile, 
+  CandidateProfileInsert, 
+  CandidateProfileUpdate 
+} from "@/lib/types/database";
 
 const DEFAULT_UPLOAD_DIR = path.join(process.cwd(), "public", "uploads");
 const DEFAULT_DATA_DIR = path.join(process.cwd(), "data");
@@ -114,4 +120,114 @@ export async function deleteResumeFileIfExists(info: ResumeInfo | null) {
 
 export function sanitizeFilename(name: string) {
   return name.replace(/[^a-zA-Z0-9._-]/g, "_");
+}
+
+// =============================================
+// CANDIDATE PROFILE DATABASE OPERATIONS
+// =============================================
+
+/**
+ * Get candidate profile by user ID from Supabase
+ * @param userId - The user ID to look up
+ * @returns Promise<CandidateProfile | null>
+ */
+export async function getCandidateProfile(userId: string): Promise<CandidateProfile | null> {
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from('candidate_profiles')
+      .select('*')
+      .eq('user_id', userId)
+      .single();
+
+    if (error) {
+      if (error.code === 'PGRST116') {
+        // No rows returned
+        return null;
+      }
+      throw error;
+    }
+
+    return data as CandidateProfile;
+  } catch (error) {
+    console.error('Error fetching candidate profile:', error);
+    throw error;
+  }
+}
+
+/**
+ * Create a new candidate profile in Supabase
+ * @param profile - The profile data to insert
+ * @returns Promise<CandidateProfile>
+ */
+export async function createCandidateProfile(profile: CandidateProfileInsert): Promise<CandidateProfile> {
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from('candidate_profiles')
+      .insert(profile)
+      .select()
+      .single();
+
+    if (error) {
+      throw error;
+    }
+
+    return data as CandidateProfile;
+  } catch (error) {
+    console.error('Error creating candidate profile:', error);
+    throw error;
+  }
+}
+
+/**
+ * Update an existing candidate profile in Supabase
+ * @param userId - The user ID to update
+ * @param updates - The fields to update
+ * @returns Promise<CandidateProfile>
+ */
+export async function updateCandidateProfile(
+  userId: string, 
+  updates: CandidateProfileUpdate
+): Promise<CandidateProfile> {
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from('candidate_profiles')
+      .update(updates)
+      .eq('user_id', userId)
+      .select()
+      .single();
+
+    if (error) {
+      throw error;
+    }
+
+    return data as CandidateProfile;
+  } catch (error) {
+    console.error('Error updating candidate profile:', error);
+    throw error;
+  }
+}
+
+/**
+ * Delete a candidate profile from Supabase
+ * @param userId - The user ID to delete
+ * @returns Promise<void>
+ */
+export async function deleteCandidateProfile(userId: string): Promise<void> {
+  try {
+    const supabase = await createClient();
+    const { error } = await supabase
+      .from('candidate_profiles')
+      .delete()
+      .eq('user_id', userId);
+
+    if (error) {
+      throw error;
+    }
+  } catch (error) {
+    console.error('Error deleting candidate profile:', error);
+    throw error;
+  }
 }
