@@ -10,10 +10,16 @@ export type Job = {
 
 export type ApplicationStatus = "Applied" | "Under Review" | "Interview" | "Offer" | "Hired" | "Rejected";
 
+export type ApplicationDetails = {
+  coverLetter?: string;
+  answers?: Record<string, string>;
+};
+
 export type Application = {
   jobId: string;
   status: ApplicationStatus;
   appliedAt: string;
+  details?: ApplicationDetails;
 };
 
 const DEFAULT_DATA_DIR = path.join(process.cwd(), "data");
@@ -47,7 +53,7 @@ export function getApplicationStatus(apps: Application[], jobId: string): Applic
   return app ? app.status : null;
 }
 
-export async function applyToJob(jobId: string): Promise<{ created: boolean; status: ApplicationStatus }> {
+export async function applyToJob(jobId: string, details?: ApplicationDetails): Promise<{ created: boolean; status: ApplicationStatus }> {
   const id = jobId.trim();
   if (!id) {
     throw new Error("INVALID_JOB_ID");
@@ -61,6 +67,7 @@ export async function applyToJob(jobId: string): Promise<{ created: boolean; sta
     jobId: id,
     status: "Applied",
     appliedAt: new Date().toISOString(),
+    details: details && (details.coverLetter || (details.answers && Object.keys(details.answers).length)) ? details : undefined,
   };
   const updated = [...apps, newApp];
   await writeApplications(updated);

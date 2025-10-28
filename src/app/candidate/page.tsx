@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import Link from "next/link";
 
 type Job = {
   id: string;
@@ -127,12 +128,12 @@ export default function CandidatePage() {
           const isApplied = !!status;
           return (
             <div key={job.id} className="p-4 flex items-center justify-between gap-4">
-              <div className="min-w-0">
-                <div className="font-medium truncate">{job.title}</div>
+              <Link href={`/jobs/${job.id}`} className="min-w-0 group">
+                <div className="font-medium truncate group-hover:underline">{job.title}</div>
                 <div className="text-sm text-muted-foreground truncate">
                   {job.company} • {job.location}
                 </div>
-              </div>
+              </Link>
               <div className="flex items-center gap-3">
                 {isApplied && status ? (
                   <span className={`text-xs px-2 py-1 rounded border font-medium ${getStatusColor(status)}`}>{status}</span>
