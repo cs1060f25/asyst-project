@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 
 // Protect selected routes: require a logged-in Supabase session
-const PROTECTED = ["/candidate", "/recruiter", "/profile"]; // prefixes
+const PROTECTED = ["/candidate", "/recruiter", "/profile", "/jobs"]; // prefixes
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
@@ -70,5 +70,7 @@ export const config = {
     "/recruiter/:path*",
     "/profile",
     "/profile/:path*",
+    "/jobs",
+    "/jobs/:path*",
   ],
 };
