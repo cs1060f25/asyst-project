@@ -6,7 +6,7 @@ import { z } from "zod";
 import { supabase } from "@/lib/supabaseClient";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 const schema = z.object({
   email: z.string().email("Enter a valid email"),
@@ -19,6 +19,7 @@ const schema = z.object({
 
 export default function SignUpPage() {
   const router = useRouter();
+  const search = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -38,7 +39,8 @@ export default function SignUpPage() {
       const { error } = await supabase.auth.signUp({ email, password });
       if (error) throw error;
       // If email confirmation is enabled, user must check inbox.
-      router.push("/candidate");
+      const redirect = search.get("redirect");
+      router.push(redirect && redirect.startsWith("/") ? redirect : "/candidate");
     } catch (err: any) {
       setError(err.message || "Sign-up failed");
     } finally {
