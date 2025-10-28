@@ -35,7 +35,7 @@ const UrlSchema = z.string().url('Invalid URL format').optional().or(z.literal('
 
 // Phone validation schema (flexible format)
 const PhoneSchema = z.string().regex(
-  /^[\+]?[1-9][\d]{0,15}$|^[\+]?[(]?[\d\s\-\(\)]{10,}$/,
+  /^[\+]?[1-9][\d]{0,15}$|^[\+]?[(]?[\d\s\-\(\)]{10,}$|^$/,
   'Invalid phone number format'
 ).optional().or(z.literal(''));
 
@@ -45,8 +45,8 @@ const EmailSchema = z.string().email('Invalid email format');
 // Name validation schema
 const NameSchema = z.string().min(1, 'Name is required').max(100, 'Name too long');
 
-// Skills validation schema
-const SkillsSchema = z.array(z.string().min(1, 'Skill cannot be empty').max(50, 'Skill name too long'))
+// Skills validation schema - allow empty strings but limit length
+const SkillsSchema = z.array(z.string().max(50, 'Skill name too long'))
   .max(50, 'Too many skills (max 50)');
 
 // Main candidate profile validation schema for insertion
