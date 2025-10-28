@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import AuthMenu from "@/components/auth/AuthMenu";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
@@ -36,6 +37,9 @@ export default function RootLayout({
               <Link href="/candidate" className="hover:underline">Candidate</Link>
               <Link href="/recruiter" className="hover:underline">Recruiter</Link>
               <Link href="/profile" className="hover:underline">Profile</Link>
+              <div className="ml-4 pl-4 border-l">
+                <AuthMenu />
+              </div>
             </nav>
           </div>
         </header>
