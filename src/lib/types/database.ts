@@ -105,3 +105,77 @@ export interface ApplicationWithJob extends Application {
 export interface JobWithApplicationCount extends Job {
   application_count: number;
 }
+
+// =============================================
+// TABLE: candidate_profiles
+// =============================================
+
+// Work experience object structure
+export interface WorkExperience {
+  company: string;
+  title: string;
+  start_date: string; // YYYY-MM format
+  end_date: string | null; // YYYY-MM format, null for current position
+  description: string;
+}
+
+// Certification object structure
+export interface Certification {
+  name: string;
+  issuer: string;
+  date: string; // YYYY-MM format
+  expiry: string | null; // YYYY-MM format, null if no expiry
+}
+
+// Main candidate profile interface
+export interface CandidateProfile {
+  id: string;                    // UUID
+  user_id: string;               // UUID, links to auth.users
+  name: string;                  // Required, title case normalized
+  email: string;                 // Required, lowercase normalized
+  phone: string | null;          // Optional, standardized format
+  education: string | null;      // Optional
+  resume_url: string | null;    // Optional, URL to resume file
+  skills: string[];             // Array of skills (lowercase, deduplicated)
+  experience: WorkExperience[];  // Array of work experience objects
+  certifications: Certification[]; // Array of certification objects
+  linkedin_url: string | null;  // Optional, LinkedIn profile URL
+  github_url: string | null;     // Optional, GitHub profile URL
+  portfolio_url: string | null; // Optional, portfolio website URL
+  offer_deadline: string | null; // Optional, ISO timestamp
+  created_at: string;           // ISO timestamp
+  updated_at: string;            // ISO timestamp
+}
+
+// Type for inserting a new candidate profile (omits auto-generated fields)
+export interface CandidateProfileInsert {
+  user_id: string;
+  name: string;
+  email: string;
+  phone?: string | null;
+  education?: string | null;
+  resume_url?: string | null;
+  skills?: string[];
+  experience?: WorkExperience[];
+  certifications?: Certification[];
+  linkedin_url?: string | null;
+  github_url?: string | null;
+  portfolio_url?: string | null;
+  offer_deadline?: string | null;
+}
+
+// Type for updating a candidate profile (all fields optional except user_id)
+export interface CandidateProfileUpdate {
+  name?: string;
+  email?: string;
+  phone?: string | null;
+  education?: string | null;
+  resume_url?: string | null;
+  skills?: string[];
+  experience?: WorkExperience[];
+  certifications?: Certification[];
+  linkedin_url?: string | null;
+  github_url?: string | null;
+  portfolio_url?: string | null;
+  offer_deadline?: string | null;
+}

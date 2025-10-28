@@ -1,22 +1,43 @@
 import { NextRequest, NextResponse } from "next/server";
 import { readProfile, writeProfile, type Profile } from "@/lib/storage";
+import { 
+  safeSaveCandidateProfile, 
+  safeUpdateCandidateProfile, 
+  fetchCandidateProfile 
+} from "@/lib/candidate-profile";
 
 export const runtime = "nodejs";
 
 export async function GET() {
+  // For backward compatibility, return the existing Profile format
   const profile = await readProfile();
   return NextResponse.json(profile);
 }
 
 export async function PUT(req: NextRequest) {
   try {
-    const body = (await req.json()) as Partial<Profile>;
+    const body = await req.json();
+    
+    // Check if this is a request for the new candidate profile system
+    if (body.user_id) {
+      // Use the new validation and normalization system
+      const result = await safeUpdateCandidateProfile(body.user_id, body);
+      
+      if (!result.success) {
+        return NextResponse.json({ error: result.error }, { status: 400 });
+      }
+      
+      return NextResponse.json(result.data);
+    }
+    
+    // Legacy Profile system (backward compatibility)
+    const profileData = body as Partial<Profile>;
 
     // Basic validation
-    const name = typeof body.name === "string" ? body.name.trim() : "";
-    const email = typeof body.email === "string" ? body.email.trim() : "";
-    const education = typeof body.education === "string" ? body.education.trim() : "";
-    const offerDeadline = typeof body.offerDeadline === "string" ? body.offerDeadline : null;
+    const name = typeof profileData.name === "string" ? profileData.name.trim() : "";
+    const email = typeof profileData.email === "string" ? profileData.email.trim() : "";
+    const education = typeof profileData.education === "string" ? profileData.education.trim() : "";
+    const offerDeadline = typeof profileData.offerDeadline === "string" ? profileData.offerDeadline : null;
 
     if (!name) return NextResponse.json({ error: "INVALID_NAME" }, { status: 400 });
     if (!isValidEmail(email)) return NextResponse.json({ error: "INVALID_EMAIL" }, { status: 400 });
