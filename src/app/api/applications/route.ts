@@ -11,7 +11,40 @@ export const runtime = "nodejs";
 const ApplicationCreateSchema = z.object({
   job_id: z.string().uuid({ message: "job_id must be a valid UUID" }),
   candidate_id: z.string().uuid({ message: "candidate_id must be a valid UUID" }),
-  resume_url: z.string().url({ message: "resume_url must be a valid URL" }).nullable().optional(),
+  resume_url: z.string()
+    .min(1, { message: "resume_url cannot be empty" })
+    .url({ message: "resume_url must be a valid URL" })
+    .refine(
+      (url) => url.startsWith('http://') || url.startsWith('https://'),
+      { message: "resume_url must be an HTTP or HTTPS URL" }
+    )
+    .refine(
+      (url) => {
+        try {
+          const parsed = new URL(url);
+          // Prevent dangerous protocols
+          return ['http:', 'https:'].includes(parsed.protocol);
+        } catch {
+          return false;
+        }
+      },
+      { message: "resume_url must use HTTP or HTTPS protocol" }
+    )
+    .refine(
+      (url) => {
+        // Optional: Validate common resume file extensions
+        const lowerUrl = url.toLowerCase();
+        const validExtensions = ['.pdf', '.doc', '.docx', '.txt', '.rtf'];
+        // Check if URL ends with a valid extension or has no extension (for cloud storage URLs)
+        const hasExtension = validExtensions.some(ext => lowerUrl.includes(ext));
+        const isCloudStorage = lowerUrl.includes('supabase.co/storage') || 
+                              lowerUrl.includes('s3.amazonaws.com') ||
+                              lowerUrl.includes('storage.googleapis.com') ||
+                              lowerUrl.includes('blob.core.windows.net');
+        return hasExtension || isCloudStorage;
+      },
+      { message: "resume_url must point to a valid document (.pdf, .doc, .docx, .txt, .rtf) or cloud storage" }
+    ),
   cover_letter: z.string().max(5000, { message: "cover_letter must be less than 5000 characters" }).nullable().optional(),
   supplemental_answers: z.record(z.string(), z.any()).nullable().optional(),
 });
