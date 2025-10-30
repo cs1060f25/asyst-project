@@ -15,7 +15,9 @@ export async function POST(req: NextRequest) {
     if (!jobId) {
       return NextResponse.json({ error: "MISSING_JOB_ID" }, { status: 400 });
     }
-    const result = await applyToJob(jobId);
+    
+    const supplementalAnswers = body?.supplementalAnswers || [];
+    const result = await applyToJob(jobId, supplementalAnswers);
     return NextResponse.json(result);
   } catch (e: any) {
     return NextResponse.json({ error: "BAD_REQUEST" }, { status: 400 });

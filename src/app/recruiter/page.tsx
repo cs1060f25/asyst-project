@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Plus } from "lucide-react";
 
 type Job = {
   id: string;
@@ -29,6 +31,7 @@ type ApplicationWithJob = Application & {
 };
 
 export default function RecruiterPage() {
+  const router = useRouter();
   const [applications, setApplications] = useState<ApplicationWithJob[]>([]);
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
@@ -179,11 +182,20 @@ export default function RecruiterPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Company Dashboard</h1>
-        <p className="text-sm text-muted-foreground">
-          Manage job applications and track candidate progress through your hiring pipeline.
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Company Dashboard</h1>
+          <p className="text-sm text-muted-foreground">
+            Manage job applications and track candidate progress through your hiring pipeline.
+          </p>
+        </div>
+        <Button
+          onClick={() => router.push("/recruiter/create-job")}
+          className="flex items-center gap-2"
+        >
+          <Plus className="h-4 w-4" />
+          Create Job
+        </Button>
       </div>
 
       {/* Filters */}

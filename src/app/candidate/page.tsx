@@ -1,15 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
-type Job = {
-  id: string;
-  title: string;
-  company: string;
-  location: string;
-};
+import { Job } from "@/lib/applications";
 
 type Application = {
   jobId: string;
@@ -18,6 +14,7 @@ type Application = {
 };
 
 export default function CandidatePage() {
+  const router = useRouter();
   const [jobs, setJobs] = useState<Job[]>([]);
   const [apps, setApps] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
@@ -78,8 +75,17 @@ export default function CandidatePage() {
   async function apply(jobId: string) {
     setSubmitting(jobId);
     setError(null);
+    
     try {
-      // Optimistic disable handled by submitting state
+      // Check if job has supplemental questions
+      const job = jobs.find(j => j.id === jobId);
+      if (job?.supplementalQuestions && job.supplementalQuestions.length > 0) {
+        // Redirect to supplemental questions page
+        router.push(`/candidate/apply/${jobId}`);
+        return;
+      }
+      
+      // No supplemental questions, apply directly
       const res = await fetch("/api/applications", {
         method: "POST",
         headers: { "Content-Type": "application/json" },

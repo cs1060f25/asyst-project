@@ -1,19 +1,35 @@
 import { promises as fs } from "fs";
 import path from "path";
 
+export type SupplementalQuestion = {
+  id: string;
+  question: string;
+  type: "text" | "textarea" | "select";
+  options?: string[]; // For select type questions
+  required: boolean;
+};
+
 export type Job = {
   id: string;
   title: string;
   company: string;
   location: string;
+  description?: string;
+  supplementalQuestions?: SupplementalQuestion[];
 };
 
 export type ApplicationStatus = "Applied" | "Under Review" | "Interview" | "Offer" | "Hired" | "Rejected";
+
+export type SupplementalAnswer = {
+  questionId: string;
+  answer: string;
+};
 
 export type Application = {
   jobId: string;
   status: ApplicationStatus;
   appliedAt: string;
+  supplementalAnswers?: SupplementalAnswer[];
 };
 
 const DEFAULT_DATA_DIR = path.join(process.cwd(), "data");
@@ -47,7 +63,7 @@ export function getApplicationStatus(apps: Application[], jobId: string): Applic
   return app ? app.status : null;
 }
 
-export async function applyToJob(jobId: string): Promise<{ created: boolean; status: ApplicationStatus }> {
+export async function applyToJob(jobId: string, supplementalAnswers?: SupplementalAnswer[]): Promise<{ created: boolean; status: ApplicationStatus }> {
   const id = jobId.trim();
   if (!id) {
     throw new Error("INVALID_JOB_ID");
@@ -61,6 +77,7 @@ export async function applyToJob(jobId: string): Promise<{ created: boolean; sta
     jobId: id,
     status: "Applied",
     appliedAt: new Date().toISOString(),
+    supplementalAnswers: supplementalAnswers || [],
   };
   const updated = [...apps, newApp];
   await writeApplications(updated);
