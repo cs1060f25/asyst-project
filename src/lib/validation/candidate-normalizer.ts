@@ -295,7 +295,8 @@ export function normalizeCandidateData(
   }
   
   // Preserve user_id if present (no normalization needed)
-  if (data.user_id !== undefined) {
+  // user_id only exists on CandidateProfileInsert, not CandidateProfileUpdate
+  if ('user_id' in data && data.user_id !== undefined) {
     normalized.user_id = data.user_id;
   }
   

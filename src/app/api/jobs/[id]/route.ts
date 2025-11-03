@@ -8,8 +8,8 @@ const JOBS = [
 
 export const runtime = "nodejs";
 
-export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
-  const id = params.id;
+export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const job = JOBS.find((j) => j.id === id);
   if (!job) {
     return NextResponse.json({ error: "NOT_FOUND" }, { status: 404 });

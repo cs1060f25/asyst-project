@@ -3,9 +3,9 @@ import { updateApplicationStatus, type ApplicationStatus } from "@/lib/applicati
 
 export const runtime = "nodejs";
 
-export async function PATCH(req: NextRequest, { params }: { params: { jobId: string } }) {
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ jobId: string }> }) {
   try {
-    const { jobId } = params;
+    const { jobId } = await params;
     const body = await req.json();
     const status = body?.status as ApplicationStatus;
     

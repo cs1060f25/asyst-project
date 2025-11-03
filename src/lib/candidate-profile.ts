@@ -46,6 +46,7 @@ export async function saveCandidateProfile(
   });
   
   // Step 2: Normalize the validated data
+  // normalizeCandidateData ensures all required fields are present after normalization
   const normalizedData = normalizeCandidateData(validatedData) as CandidateProfileInsert;
   
   // Step 3: Store in database
@@ -105,7 +106,7 @@ export async function safeSaveCandidateProfile(
     if (!validationResult.success) {
       return {
         success: false,
-        error: `Validation failed: ${validationResult.error?.errors.map(e => e.message).join(', ')}`
+        error: `Validation failed: ${validationResult.error?.issues.map(e => e.message).join(', ')}`
       };
     }
     
@@ -148,7 +149,7 @@ export async function safeUpdateCandidateProfile(
     if (!validationResult.success) {
       return {
         success: false,
-        error: `Validation failed: ${validationResult.error?.errors.map(e => e.message).join(', ')}`
+        error: `Validation failed: ${validationResult.error?.issues.map(e => e.message).join(', ')}`
       };
     }
     
