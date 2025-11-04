@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { Modal } from "@/components/ui/modal";
 
 type Job = {
   id: string;
@@ -19,12 +21,15 @@ type Application = {
 };
 
 export default function CandidatePage() {
+  const router = useRouter();
   const [jobs, setJobs] = useState<Job[]>([]);
   const [apps, setApps] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
   const [submitting, setSubmitting] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [suppModalOpen, setSuppModalOpen] = useState(false);
+  const [pendingJobForSupp, setPendingJobForSupp] = useState<string | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -80,7 +85,19 @@ export default function CandidatePage() {
     setSubmitting(jobId);
     setError(null);
     try {
-      // Optimistic disable handled by submitting state
+      // First check if job has supplemental questions
+      const jobRes = await fetch(`/api/jobs/${jobId}`, { cache: "no-store" });
+      if (jobRes.ok) {
+        const jobData = await jobRes.json();
+        const hasSupp = Array.isArray(jobData?.supplementalQuestions) && jobData.supplementalQuestions.length > 0;
+        if (hasSupp) {
+          setPendingJobForSupp(jobId);
+          setSuppModalOpen(true);
+          return; // Stop here; user decides in modal
+        }
+      }
+
+      // No supplemental questions: proceed with one-click apply
       const res = await fetch("/api/applications", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -90,7 +107,6 @@ export default function CandidatePage() {
       if (!res.ok) {
         throw new Error(data?.error || "Failed to apply");
       }
-      // If created, append; if not, leave as-is.
       if (data.created) {
         setApps((prev) => [
           ...prev,
@@ -152,6 +168,33 @@ export default function CandidatePage() {
           <div className="p-4 text-sm text-muted-foreground">No jobs match your search.</div>
         )}
       </div>
+
+      <Modal
+        open={suppModalOpen}
+        onClose={() => setSuppModalOpen(false)}
+        title="Additional Questions Required"
+        description="This application requires you to answer a few supplemental questions before submitting."
+        actions={
+          <>
+            <Button variant="outline" onClick={() => setSuppModalOpen(false)}>Cancel</Button>
+            <Button
+              onClick={() => {
+                if (pendingJobForSupp) {
+                  const id = pendingJobForSupp;
+                  setSuppModalOpen(false);
+                  setPendingJobForSupp(null);
+                  router.push(`/jobs/${id}/supplemental`);
+                }
+              }}
+            >
+              Continue
+            </Button>
+          </>
+        }
+      >
+        <p className="text-sm">You will be taken to a separate page to complete these questions.</p>
+      </Modal>
     </div>
   );
 }
+

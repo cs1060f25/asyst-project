@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Modal } from "@/components/ui/modal";
 
 type Job = {
   id: string;
@@ -12,6 +13,7 @@ type Job = {
   company: string;
   location: string;
   description?: string;
+  supplementalQuestions?: Array<{ id: string; label: string; required?: boolean; type?: string }>;
 };
 
 type Application = {
@@ -32,6 +34,7 @@ export default function JobDetailsPage() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [suppModalOpen, setSuppModalOpen] = useState(false);
 
   const status = useMemo(() => apps.find((a) => a.jobId === jobId)?.status ?? null, [apps, jobId]);
   const isApplied = !!status;
@@ -65,6 +68,18 @@ export default function JobDetailsPage() {
     setSubmitting(true);
     setError(null);
     try {
+      // Fetch job details to decide if we must redirect to supplemental
+      const jobRes = await fetch(`/api/jobs/${jobId}`, { cache: "no-store" });
+      if (jobRes.ok) {
+        const jobData: Job = await jobRes.json();
+        const hasSupp = Array.isArray(jobData.supplementalQuestions) && jobData.supplementalQuestions.length > 0;
+        if (hasSupp) {
+          setSuppModalOpen(true);
+          return;
+        }
+      }
+
+      // No supplemental questions; proceed to apply directly (preserving local fields)
       const res = await fetch(`/api/applications`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -80,14 +95,12 @@ export default function JobDetailsPage() {
       if (!res.ok) {
         throw new Error(data?.error || "Failed to apply");
       }
-      // If created, reflect in local apps state
       if (data.created) {
         setApps((prev) => [
           ...prev,
           { jobId, status: data.status as Application["status"], appliedAt: new Date().toISOString() },
         ]);
       }
-      // After successful apply, return to dashboard
       router.push("/candidate");
     } catch (e: any) {
       setError(e.message || "Failed to apply");
@@ -138,6 +151,22 @@ export default function JobDetailsPage() {
           {isApplied ? "Applied" : submitting ? "Submitting..." : "Submit Application"}
         </Button>
       </div>
+
+      <Modal
+        open={suppModalOpen}
+        onClose={() => setSuppModalOpen(false)}
+        title="Additional Questions Required"
+        description="This application requires supplemental questions to be answered on the next page."
+        actions={
+          <>
+            <Button variant="outline" onClick={() => setSuppModalOpen(false)}>Cancel</Button>
+            <Button onClick={() => { setSuppModalOpen(false); router.push(`/jobs/${jobId}/supplemental`); }}>Continue</Button>
+          </>
+        }
+      >
+        <p className="text-sm">You will be taken to a separate page to complete the required questions.</p>
+      </Modal>
     </div>
   );
 }
+
