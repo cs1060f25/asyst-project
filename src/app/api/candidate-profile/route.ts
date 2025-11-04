@@ -4,17 +4,30 @@ import { fetchCandidateProfile, safeSaveCandidateProfile, safeUpdateCandidatePro
 
 export const runtime = "nodejs";
 
-async function getAuthedUserId() {
+async function getAuthedUserId(req?: NextRequest) {
+  // Try SSR cookies first
   const supabase = await createClient();
-  const { data, error } = await supabase.auth.getUser();
-  if (error || !data?.user) return null;
-  return data.user.id;
+  const { data } = await supabase.auth.getSession();
+  if (data?.session?.user?.id) return data.session.user.id;
+
+  // Fallback: Authorization: Bearer <access_token>
+  if (req) {
+    const auth = req.headers.get('authorization') || req.headers.get('Authorization');
+    if (auth && auth.toLowerCase().startsWith('bearer ')) {
+      const token = auth.slice(7);
+      try {
+        const { data: userData, error } = await supabase.auth.getUser(token);
+        if (!error && userData?.user?.id) return userData.user.id;
+      } catch {}
+    }
+  }
+  return null;
 }
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
-    const userId = await getAuthedUserId();
-    if (!userId) return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 });
+    const userId = await getAuthedUserId(req);
+    if (!userId) return NextResponse.json({ error: "UNAUTHORIZED: no session" }, { status: 401 });
 
     const profile = await fetchCandidateProfile(userId);
     return NextResponse.json(profile);
@@ -25,7 +38,7 @@ export async function GET() {
 
 export async function PUT(req: NextRequest) {
   try {
-    const userId = await getAuthedUserId();
+    const userId = await getAuthedUserId(req);
     if (!userId) return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 });
 
     const body = await req.json();

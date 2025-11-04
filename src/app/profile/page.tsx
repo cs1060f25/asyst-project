@@ -10,6 +10,7 @@ import {
   SelectContent, 
   SelectItem 
 } from "@/components/ui/select";
+import { supabase } from "@/lib/supabaseClient";
 
 const MAX_BYTES = 5 * 1024 * 1024; // 5MB
 const ALLOWED_TYPES = new Set([
@@ -118,11 +119,16 @@ export default function ProfilePage() {
     let mounted = true;
     (async () => {
       try {
-        const res = await fetch("/api/candidate-profile", { cache: "no-store" });
+        const { data: sessionData } = await supabase.auth.getSession();
+        const token = sessionData.session?.access_token;
+        const res = await fetch("/api/candidate-profile", { 
+          cache: "no-store",
+          headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        });
         if (!res.ok) return; // likely 401 when not authed
-        const data = await res.json();
-        if (mounted && data) {
-          setCandidate((prev: any) => ({ ...prev, ...data }));
+        const profileJson = await res.json();
+        if (mounted && profileJson) {
+          setCandidate((prev: any) => ({ ...prev, ...profileJson }));
         }
       } catch {
         // ignore
@@ -135,18 +141,63 @@ export default function ProfilePage() {
     return v.split(",").map(s => s.trim()).filter(Boolean);
   }
 
+  const EMPLOYMENT_OPTIONS = [
+    "internship",
+    "full_time",
+    "part_time",
+    "contract",
+    "temporary",
+    "co-op",
+  ];
+  const TIMEZONE_OPTIONS = [
+    "PST","MST","CST","EST","UTC","UTC+1","UTC+2","UTC+5:30","UTC+8"
+  ];
+  const [employmentOther, setEmploymentOther] = useState("");
+  const [timezoneOther, setTimezoneOther] = useState("");
+  // 'Other' text values for selects
+  const [degreeOther, setDegreeOther] = useState("");
+  const [schoolOther, setSchoolOther] = useState("");
+  const [workAuthOther, setWorkAuthOther] = useState("");
+  const [pronounsOther, setPronounsOther] = useState("");
+  const [genderOther, setGenderOther] = useState("");
+  const [raceOther, setRaceOther] = useState("");
+  const [veteranOther, setVeteranOther] = useState("");
+  const [disabilityOther, setDisabilityOther] = useState("");
+  const [educationOther, setEducationOther] = useState("");
+
   async function saveCandidateProfile() {
     setCandidateSaving(true);
     setCandidateError(null);
     try {
+      const payload = {
+        ...candidate,
+        employment_types: [
+          ...(candidate.employment_types || []),
+          ...parseCommaList(employmentOther),
+        ],
+        timezone: (candidate.timezone && TIMEZONE_OPTIONS.includes(candidate.timezone))
+          ? candidate.timezone
+          : (timezoneOther || candidate.timezone || ""),
+        degree_level: candidate.degree_level === "__other__" ? degreeOther : candidate.degree_level,
+        school: candidate.school === "__other__" ? schoolOther : candidate.school,
+        work_authorization: candidate.work_authorization === "__other__" ? workAuthOther : candidate.work_authorization,
+        pronouns: candidate.pronouns === "__other__" ? pronounsOther : candidate.pronouns,
+        eeo_gender: candidate.eeo_gender === "__other__" ? genderOther : candidate.eeo_gender,
+        eeo_race_ethnicity: candidate.eeo_race_ethnicity === "__other__" ? raceOther : candidate.eeo_race_ethnicity,
+        eeo_veteran_status: candidate.eeo_veteran_status === "__other__" ? veteranOther : candidate.eeo_veteran_status,
+        eeo_disability_status: candidate.eeo_disability_status === "__other__" ? disabilityOther : candidate.eeo_disability_status,
+        education: candidate.education === "__other__" ? educationOther : candidate.education,
+      };
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
       const res = await fetch("/api/candidate-profile", {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(candidate),
+        headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        body: JSON.stringify(payload),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data?.error || "Failed to save candidate profile");
-      setCandidate((prev: any) => ({ ...prev, ...data }));
+      const respJson = await res.json();
+      if (!res.ok) throw new Error(respJson?.error || "Failed to save candidate profile");
+      setCandidate((prev: any) => ({ ...prev, ...respJson }));
     } catch (e: any) {
       setCandidateError(e?.message || "Failed to save candidate profile");
     } finally {
@@ -265,6 +316,44 @@ export default function ProfilePage() {
           />
         </div>
         <div className="grid gap-2">
+          <label className="text-sm font-medium">Major (Education)</label>
+          <Select
+            value={(candidate.education && [
+              "Computer Science","Software Engineering","Electrical Engineering","Computer Engineering","Data Science","Information Systems","Mathematics","Statistics"
+            ].includes(candidate.education)) ? candidate.education : (candidate.education ? "__other__" : "")}
+            onValueChange={(v) => {
+              if (v === "__other__") {
+                setCandidate((p: any) => ({ ...p, education: "__other__" }));
+                return;
+              }
+              setEducationOther("");
+              setCandidate((p: any) => ({ ...p, education: v }))
+            }}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select your major" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="Computer Science">Computer Science</SelectItem>
+              <SelectItem value="Software Engineering">Software Engineering</SelectItem>
+              <SelectItem value="Electrical Engineering">Electrical Engineering</SelectItem>
+              <SelectItem value="Computer Engineering">Computer Engineering</SelectItem>
+              <SelectItem value="Data Science">Data Science</SelectItem>
+              <SelectItem value="Information Systems">Information Systems</SelectItem>
+              <SelectItem value="Mathematics">Mathematics</SelectItem>
+              <SelectItem value="Statistics">Statistics</SelectItem>
+              <SelectItem value="__other__">Other</SelectItem>
+            </SelectContent>
+          </Select>
+          {(
+            candidate.education === "__other__" || (candidate.education && ![
+              "Computer Science","Software Engineering","Electrical Engineering","Computer Engineering","Data Science","Information Systems","Mathematics","Statistics"
+            ].includes(candidate.education))
+          ) && (
+            <Input value={educationOther} onChange={(e) => setEducationOther(e.target.value)} placeholder="Enter your major" />
+          )}
+        </div>
+        <div className="grid gap-2">
           <label className="text-sm font-medium">Email</label>
           <Input
             type="email"
@@ -337,7 +426,11 @@ export default function ProfilePage() {
               "Stanford University","MIT","UC Berkeley","Harvard University","Carnegie Mellon University","UIUC","Georgia Tech"
             ].includes(candidate.school)) ? candidate.school : (candidate.school ? "__other__" : "")}
             onValueChange={(v) => {
-              if (v === "__other__") return;
+              if (v === "__other__") {
+                setCandidate((p: any) => ({ ...p, school: "__other__" }));
+                return;
+              }
+              setSchoolOther("");
               setCandidate((p: any) => ({ ...p, school: v }))
             }}
           >
@@ -355,10 +448,12 @@ export default function ProfilePage() {
               <SelectItem value="__other__">Other</SelectItem>
             </SelectContent>
           </Select>
-          {(candidate.school && ![
-            "Stanford University","MIT","UC Berkeley","Harvard University","Carnegie Mellon University","UIUC","Georgia Tech"
-          ].includes(candidate.school)) && (
-            <Input value={candidate.school || ""} onChange={(e) => setCandidate((p: any) => ({ ...p, school: e.target.value }))} placeholder="Enter school" />
+          {(
+            candidate.school === "__other__" || (candidate.school && ![
+              "Stanford University","MIT","UC Berkeley","Harvard University","Carnegie Mellon University","UIUC","Georgia Tech"
+            ].includes(candidate.school))
+          ) && (
+            <Input value={schoolOther} onChange={(e) => setSchoolOther(e.target.value)} placeholder="Enter school" />
           )}
         </div>
         <div className="grid gap-2">
@@ -366,7 +461,11 @@ export default function ProfilePage() {
           <Select
             value={(candidate.degree_level && ["High School","Associate","Bachelor's","Master's","PhD","Bootcamp"].includes(candidate.degree_level)) ? candidate.degree_level : (candidate.degree_level ? "__other__" : "")}
             onValueChange={(v) => {
-              if (v === "__other__") return; // show text input below
+              if (v === "__other__") {
+                setCandidate((p: any) => ({ ...p, degree_level: "__other__" }));
+                return;
+              }
+              setDegreeOther("");
               setCandidate((p: any) => ({ ...p, degree_level: v }))
             }}
           >
@@ -383,8 +482,10 @@ export default function ProfilePage() {
               <SelectItem value="__other__">Other</SelectItem>
             </SelectContent>
           </Select>
-          {(candidate.degree_level && !["High School","Associate","Bachelor's","Master's","PhD","Bootcamp"].includes(candidate.degree_level)) && (
-            <Input value={candidate.degree_level || ""} onChange={(e) => setCandidate((p: any) => ({ ...p, degree_level: e.target.value }))} placeholder="Enter degree level" />
+          {(
+            candidate.degree_level === "__other__" || (candidate.degree_level && !["High School","Associate","Bachelor's","Master's","PhD","Bootcamp"].includes(candidate.degree_level))
+          ) && (
+            <Input value={degreeOther} onChange={(e) => setDegreeOther(e.target.value)} placeholder="Enter degree level" />
           )}
         </div>
         <div className="grid gap-2">
@@ -410,7 +511,11 @@ export default function ProfilePage() {
               "US Citizen","US Permanent Resident","H1B","F1 OPT","F1 CPT","TN"
             ].includes(candidate.work_authorization)) ? candidate.work_authorization : (candidate.work_authorization ? "__other__" : "")}
             onValueChange={(v) => {
-              if (v === "__other__") return;
+              if (v === "__other__") {
+                setCandidate((p: any) => ({ ...p, work_authorization: "__other__" }));
+                return;
+              }
+              setWorkAuthOther("");
               setCandidate((p: any) => ({ ...p, work_authorization: v }))
             }}
           >
@@ -427,10 +532,12 @@ export default function ProfilePage() {
               <SelectItem value="__other__">Other</SelectItem>
             </SelectContent>
           </Select>
-          {(candidate.work_authorization && ![
-            "US Citizen","US Permanent Resident","H1B","F1 OPT","F1 CPT","TN"
-          ].includes(candidate.work_authorization)) && (
-            <Input value={candidate.work_authorization || ""} onChange={(e) => setCandidate((p: any) => ({ ...p, work_authorization: e.target.value }))} placeholder="Enter work authorization" />
+          {(
+            candidate.work_authorization === "__other__" || (candidate.work_authorization && ![
+              "US Citizen","US Permanent Resident","H1B","F1 OPT","F1 CPT","TN"
+            ].includes(candidate.work_authorization))
+          ) && (
+            <Input value={workAuthOther} onChange={(e) => setWorkAuthOther(e.target.value)} placeholder="Enter work authorization" />
           )}
         </div>
         <div className="flex items-center gap-4">
@@ -443,9 +550,31 @@ export default function ProfilePage() {
             Open to Relocation
           </label>
         </div>
-        <div className="grid gap-2">
-          <label className="text-sm font-medium">Employment Types (comma-separated)</label>
-          <Input value={(candidate.employment_types || []).join(", ")} onChange={(e) => setCandidate((p: any) => ({ ...p, employment_types: parseCommaList(e.target.value) }))} placeholder="internship, full_time, part_time, contract" />
+        <div className="space-y-2">
+          <label className="text-sm font-medium">Employment Types</label>
+          <div className="grid grid-cols-2 gap-2">
+            {EMPLOYMENT_OPTIONS.map((opt) => (
+              <label key={opt} className="inline-flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={candidate.employment_types?.includes(opt) || false}
+                  onChange={(e) => {
+                    const checked = e.target.checked;
+                    setCandidate((p: any) => {
+                      const set = new Set(p.employment_types || []);
+                      if (checked) set.add(opt); else set.delete(opt);
+                      return { ...p, employment_types: Array.from(set) };
+                    });
+                  }}
+                />
+                {opt}
+              </label>
+            ))}
+          </div>
+          <div className="grid gap-1">
+            <label className="text-xs text-muted-foreground">Other employment types (comma-separated)</label>
+            <Input value={employmentOther} onChange={(e) => setEmploymentOther(e.target.value)} placeholder="e.g., apprentice, seasonal" />
+          </div>
         </div>
 
         {/* Skills/Tech stacks */}
@@ -459,14 +588,41 @@ export default function ProfilePage() {
         </div>
         <div className="grid gap-2">
           <label className="text-sm font-medium">Timezone</label>
-          <Input value={candidate.timezone || ""} onChange={(e) => setCandidate((p: any) => ({ ...p, timezone: e.target.value }))} placeholder="e.g., PST, EST, UTC+2" />
+          <Select
+            value={(candidate.timezone && TIMEZONE_OPTIONS.includes(candidate.timezone)) ? candidate.timezone : (candidate.timezone ? "__other__" : "")}
+            onValueChange={(v) => {
+              if (v === "__other__") {
+                setCandidate((p: any) => ({ ...p, timezone: "__other__" }));
+                return;
+              }
+              setTimezoneOther("");
+              setCandidate((p: any) => ({ ...p, timezone: v }));
+            }}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select timezone" />
+            </SelectTrigger>
+            <SelectContent>
+              {TIMEZONE_OPTIONS.map((tz) => (
+                <SelectItem key={tz} value={tz}>{tz}</SelectItem>
+              ))}
+              <SelectItem value="__other__">Other</SelectItem>
+            </SelectContent>
+          </Select>
+          {(candidate.timezone === "__other__" || (candidate.timezone && !TIMEZONE_OPTIONS.includes(candidate.timezone))) && (
+            <Input value={timezoneOther} onChange={(e) => setTimezoneOther(e.target.value)} placeholder="e.g., UTC+2, Europe/Berlin" />
+          )}
         </div>
         <div className="grid gap-2">
           <label className="text-sm font-medium">Pronouns</label>
           <Select
             value={(candidate.pronouns && ["she/her","he/him","they/them","she/they","he/they"].includes(candidate.pronouns)) ? candidate.pronouns : (candidate.pronouns ? "__other__" : "")}
             onValueChange={(v) => {
-              if (v === "__other__") return;
+              if (v === "__other__") {
+                setCandidate((p: any) => ({ ...p, pronouns: "__other__" }));
+                return;
+              }
+              setPronounsOther("");
               setCandidate((p: any) => ({ ...p, pronouns: v }))
             }}
           >
@@ -482,8 +638,10 @@ export default function ProfilePage() {
               <SelectItem value="__other__">Other</SelectItem>
             </SelectContent>
           </Select>
-          {(candidate.pronouns && !["she/her","he/him","they/them","she/they","he/they"].includes(candidate.pronouns)) && (
-            <Input value={candidate.pronouns || ""} onChange={(e) => setCandidate((p: any) => ({ ...p, pronouns: e.target.value }))} placeholder="Enter pronouns" />
+          {(
+            candidate.pronouns === "__other__" || (candidate.pronouns && !["she/her","he/him","they/them","she/they","he/they"].includes(candidate.pronouns))
+          ) && (
+            <Input value={pronounsOther} onChange={(e) => setPronounsOther(e.target.value)} placeholder="Enter pronouns" />
           )}
         </div>
         <div className="grid gap-2">
@@ -525,13 +683,13 @@ export default function ProfilePage() {
               if (candidate.eeo_prefer_not_to_say) return "__pnts__";
               const options = ["Woman","Man","Non-binary"];
               if (!candidate.eeo_gender) return "";
-              return options.includes(candidate.eeo_gender) ? candidate.eeo_gender : "__other__";
+              return (candidate.eeo_gender === "__other__" || !options.includes(candidate.eeo_gender)) ? "__other__" : candidate.eeo_gender;
             })()}
             onValueChange={(v) => {
               if (v === "__pnts__") {
                 setCandidate((p: any) => ({ ...p, eeo_prefer_not_to_say: true, eeo_gender: "" }));
               } else if (v === "__other__") {
-                setCandidate((p: any) => ({ ...p, eeo_prefer_not_to_say: false }));
+                setCandidate((p: any) => ({ ...p, eeo_prefer_not_to_say: false, eeo_gender: "__other__" }));
               } else {
                 setCandidate((p: any) => ({ ...p, eeo_gender: v, eeo_prefer_not_to_say: false }));
               }
@@ -548,8 +706,9 @@ export default function ProfilePage() {
               <SelectItem value="__pnts__">Prefer not to say</SelectItem>
             </SelectContent>
           </Select>
-          {(!candidate.eeo_prefer_not_to_say && candidate.eeo_gender && !["Woman","Man","Non-binary"].includes(candidate.eeo_gender)) && (
-            <Input value={candidate.eeo_gender || ""} onChange={(e) => setCandidate((p: any) => ({ ...p, eeo_gender: e.target.value }))} placeholder="Self-describe" />
+          <p className="text-xs text-muted-foreground">Sharing gender is optional and used only in aggregate for EEO reporting.</p>
+          {(!candidate.eeo_prefer_not_to_say && (candidate.eeo_gender === "__other__" || (candidate.eeo_gender && ["Woman","Man","Non-binary"].indexOf(candidate.eeo_gender) === -1))) && (
+            <Input value={genderOther} onChange={(e) => setGenderOther(e.target.value)} placeholder="Self-describe" />
           )}
         </div>
         <div className="grid gap-2">
@@ -565,7 +724,11 @@ export default function ProfilePage() {
               "Two or More Races"
             ].includes(candidate.eeo_race_ethnicity)) ? candidate.eeo_race_ethnicity : (candidate.eeo_race_ethnicity ? "__other__" : "")}
             onValueChange={(v) => {
-              if (v === "__other__") return;
+              if (v === "__other__") {
+                setCandidate((p: any) => ({ ...p, eeo_race_ethnicity: "__other__" }));
+                return;
+              }
+              setRaceOther("");
               setCandidate((p: any) => ({ ...p, eeo_race_ethnicity: v }))
             }}
           >
@@ -583,10 +746,9 @@ export default function ProfilePage() {
               <SelectItem value="__other__">Other</SelectItem>
             </SelectContent>
           </Select>
-          {(candidate.eeo_race_ethnicity && ![
-            "American Indian or Alaska Native","Asian","Black or African American","Hispanic or Latino","Native Hawaiian or Other Pacific Islander","White","Two or More Races"
-          ].includes(candidate.eeo_race_ethnicity)) && (
-            <Input value={candidate.eeo_race_ethnicity || ""} onChange={(e) => setCandidate((p: any) => ({ ...p, eeo_race_ethnicity: e.target.value }))} placeholder="Self-identify" />
+          <p className="text-xs text-muted-foreground">You may select from common categories or self-identify; this is optional.</p>
+          {(candidate.eeo_race_ethnicity === "__other__" || (candidate.eeo_race_ethnicity && ["American Indian or Alaska Native","Asian","Black or African American","Hispanic or Latino","Native Hawaiian or Other Pacific Islander","White","Two or More Races"].indexOf(candidate.eeo_race_ethnicity) === -1)) && (
+            <Input value={raceOther} onChange={(e) => setRaceOther(e.target.value)} placeholder="Self-identify" />
           )}
         </div>
         <div className="grid gap-2">
@@ -594,7 +756,11 @@ export default function ProfilePage() {
           <Select
             value={(candidate.eeo_veteran_status && ["Not a veteran","Veteran","Protected Veteran"].includes(candidate.eeo_veteran_status)) ? candidate.eeo_veteran_status : (candidate.eeo_veteran_status ? "__other__" : "")}
             onValueChange={(v) => {
-              if (v === "__other__") return;
+              if (v === "__other__") {
+                setCandidate((p: any) => ({ ...p, eeo_veteran_status: "__other__" }));
+                return;
+              }
+              setVeteranOther("");
               setCandidate((p: any) => ({ ...p, eeo_veteran_status: v }))
             }}
           >
@@ -608,8 +774,11 @@ export default function ProfilePage() {
               <SelectItem value="__other__">Other</SelectItem>
             </SelectContent>
           </Select>
-          {(candidate.eeo_veteran_status && !["Not a veteran","Veteran","Protected Veteran"].includes(candidate.eeo_veteran_status)) && (
-            <Input value={candidate.eeo_veteran_status || ""} onChange={(e) => setCandidate((p: any) => ({ ...p, eeo_veteran_status: e.target.value }))} placeholder="Self-identify" />
+          <p className="text-xs text-muted-foreground">Optional and never used to make hiring decisions.</p>
+          {(
+            candidate.eeo_veteran_status === "__other__" || (["Not a veteran","Veteran","Protected Veteran"].indexOf(candidate.eeo_veteran_status) === -1 && !!candidate.eeo_veteran_status)
+          ) && (
+            <Input value={veteranOther} onChange={(e) => setVeteranOther(e.target.value)} placeholder="Self-identify" />
           )}
         </div>
         <div className="grid gap-2">
@@ -617,7 +786,11 @@ export default function ProfilePage() {
           <Select
             value={(candidate.eeo_disability_status && ["Yes","No","Prefer not to say"].includes(candidate.eeo_disability_status)) ? candidate.eeo_disability_status : (candidate.eeo_disability_status ? "__other__" : "")}
             onValueChange={(v) => {
-              if (v === "__other__") return;
+              if (v === "__other__") {
+                setCandidate((p: any) => ({ ...p, eeo_disability_status: "__other__" }));
+                return;
+              }
+              setDisabilityOther("");
               setCandidate((p: any) => ({ ...p, eeo_disability_status: v }))
             }}
           >
@@ -631,8 +804,11 @@ export default function ProfilePage() {
               <SelectItem value="__other__">Other</SelectItem>
             </SelectContent>
           </Select>
-          {(candidate.eeo_disability_status && !["Yes","No","Prefer not to say"].includes(candidate.eeo_disability_status)) && (
-            <Input value={candidate.eeo_disability_status || ""} onChange={(e) => setCandidate((p: any) => ({ ...p, eeo_disability_status: e.target.value }))} placeholder="Self-identify" />
+          <p className="text-xs text-muted-foreground">Optional; you can also select Prefer not to say.</p>
+          {(
+            candidate.eeo_disability_status === "__other__" || (["Yes","No","Prefer not to say"].indexOf(candidate.eeo_disability_status) === -1 && !!candidate.eeo_disability_status)
+          ) && (
+            <Input value={disabilityOther} onChange={(e) => setDisabilityOther(e.target.value)} placeholder="Self-identify" />
           )}
         </div>
         <div className="flex items-center gap-2">
