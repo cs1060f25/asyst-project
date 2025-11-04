@@ -162,6 +162,35 @@ export interface CandidateProfileInsert {
   github_url?: string | null;
   portfolio_url?: string | null;
   offer_deadline?: string | null;
+  // Voluntary EEO disclosures
+  eeo_gender?: string | null;
+  eeo_race_ethnicity?: string | null;
+  eeo_veteran_status?: string | null;
+  eeo_disability_status?: string | null;
+  eeo_prefer_not_to_say?: boolean | null;
+  // Common SWE profile fields
+  location?: string | null;
+  school?: string | null;
+  degree_level?: string | null;
+  graduation_date?: string | null; // YYYY-MM
+  gpa?: number | null;
+  years_experience?: number | null;
+  work_authorization?: string | null;
+  requires_sponsorship?: boolean | null;
+  open_to_relocation?: boolean | null;
+  employment_types?: string[]; // e.g., ["internship","full_time"]
+  pronouns?: string | null;
+  languages?: string[];
+  frameworks?: string[];
+  timezone?: string | null;
+  website_url?: string | null;
+  twitter_url?: string | null;
+  mastodon_url?: string | null;
+  dribbble_url?: string | null;
+  leetcode_url?: string | null;
+  codeforces_url?: string | null;
+  hackerrank_url?: string | null;
+  referral_source?: string | null;
 }
 
 // Type for updating a candidate profile (all fields optional except user_id)
@@ -178,4 +207,33 @@ export interface CandidateProfileUpdate {
   github_url?: string | null;
   portfolio_url?: string | null;
   offer_deadline?: string | null;
+  // Voluntary EEO disclosures
+  eeo_gender?: string | null;
+  eeo_race_ethnicity?: string | null;
+  eeo_veteran_status?: string | null;
+  eeo_disability_status?: string | null;
+  eeo_prefer_not_to_say?: boolean | null;
+  // Common SWE profile fields
+  location?: string | null;
+  school?: string | null;
+  degree_level?: string | null;
+  graduation_date?: string | null; // YYYY-MM
+  gpa?: number | null;
+  years_experience?: number | null;
+  work_authorization?: string | null;
+  requires_sponsorship?: boolean | null;
+  open_to_relocation?: boolean | null;
+  employment_types?: string[];
+  pronouns?: string | null;
+  languages?: string[];
+  frameworks?: string[];
+  timezone?: string | null;
+  website_url?: string | null;
+  twitter_url?: string | null;
+  mastodon_url?: string | null;
+  dribbble_url?: string | null;
+  leetcode_url?: string | null;
+  codeforces_url?: string | null;
+  hackerrank_url?: string | null;
+  referral_source?: string | null;
 }

@@ -63,7 +63,36 @@ export const CandidateProfileInsertSchema = z.object({
   linkedin_url: UrlSchema.nullable().optional(),
   github_url: UrlSchema.nullable().optional(),
   portfolio_url: UrlSchema.nullable().optional(),
-  offer_deadline: z.string().datetime('Invalid deadline format').nullable().optional()
+  offer_deadline: z.string().datetime('Invalid deadline format').nullable().optional(),
+  // Voluntary EEO disclosures
+  eeo_gender: z.string().max(50).nullable().optional(),
+  eeo_race_ethnicity: z.string().max(100).nullable().optional(),
+  eeo_veteran_status: z.string().max(100).nullable().optional(),
+  eeo_disability_status: z.string().max(100).nullable().optional(),
+  eeo_prefer_not_to_say: z.boolean().nullable().optional(),
+  // Common SWE profile fields
+  location: z.string().max(200).nullable().optional(),
+  school: z.string().max(200).nullable().optional(),
+  degree_level: z.string().max(100).nullable().optional(),
+  graduation_date: z.string().regex(/^\d{4}-\d{2}$/,'Graduation date must be in YYYY-MM format').nullable().optional(),
+  gpa: z.number().min(0).max(4.0).nullable().optional(),
+  years_experience: z.number().int().min(0).max(60).nullable().optional(),
+  work_authorization: z.string().max(100).nullable().optional(),
+  requires_sponsorship: z.boolean().nullable().optional(),
+  open_to_relocation: z.boolean().nullable().optional(),
+  employment_types: z.array(z.string().max(50)).max(10).optional(),
+  pronouns: z.string().max(50).nullable().optional(),
+  languages: z.array(z.string().max(50)).max(50).optional(),
+  frameworks: z.array(z.string().max(50)).max(50).optional(),
+  timezone: z.string().max(100).nullable().optional(),
+  website_url: UrlSchema.nullable().optional(),
+  twitter_url: UrlSchema.nullable().optional(),
+  mastodon_url: UrlSchema.nullable().optional(),
+  dribbble_url: UrlSchema.nullable().optional(),
+  leetcode_url: UrlSchema.nullable().optional(),
+  codeforces_url: UrlSchema.nullable().optional(),
+  hackerrank_url: UrlSchema.nullable().optional(),
+  referral_source: z.string().max(100).nullable().optional()
 });
 
 // Candidate profile validation schema for updates (all fields optional)
@@ -79,7 +108,36 @@ export const CandidateProfileUpdateSchema = z.object({
   linkedin_url: UrlSchema.nullable().optional(),
   github_url: UrlSchema.nullable().optional(),
   portfolio_url: UrlSchema.nullable().optional(),
-  offer_deadline: z.string().datetime('Invalid deadline format').nullable().optional()
+  offer_deadline: z.string().datetime('Invalid deadline format').nullable().optional(),
+  // Voluntary EEO disclosures
+  eeo_gender: z.string().max(50).nullable().optional(),
+  eeo_race_ethnicity: z.string().max(100).nullable().optional(),
+  eeo_veteran_status: z.string().max(100).nullable().optional(),
+  eeo_disability_status: z.string().max(100).nullable().optional(),
+  eeo_prefer_not_to_say: z.boolean().nullable().optional(),
+  // Common SWE profile fields
+  location: z.string().max(200).nullable().optional(),
+  school: z.string().max(200).nullable().optional(),
+  degree_level: z.string().max(100).nullable().optional(),
+  graduation_date: z.string().regex(/^\d{4}-\d{2}$/,'Graduation date must be in YYYY-MM format').nullable().optional(),
+  gpa: z.number().min(0).max(4.0).nullable().optional(),
+  years_experience: z.number().int().min(0).max(60).nullable().optional(),
+  work_authorization: z.string().max(100).nullable().optional(),
+  requires_sponsorship: z.boolean().nullable().optional(),
+  open_to_relocation: z.boolean().nullable().optional(),
+  employment_types: z.array(z.string().max(50)).max(10).optional(),
+  pronouns: z.string().max(50).nullable().optional(),
+  languages: z.array(z.string().max(50)).max(50).optional(),
+  frameworks: z.array(z.string().max(50)).max(50).optional(),
+  timezone: z.string().max(100).nullable().optional(),
+  website_url: UrlSchema.nullable().optional(),
+  twitter_url: UrlSchema.nullable().optional(),
+  mastodon_url: UrlSchema.nullable().optional(),
+  dribbble_url: UrlSchema.nullable().optional(),
+  leetcode_url: UrlSchema.nullable().optional(),
+  codeforces_url: UrlSchema.nullable().optional(),
+  hackerrank_url: UrlSchema.nullable().optional(),
+  referral_source: z.string().max(100).nullable().optional()
 });
 
 // Type exports for use in other modules
