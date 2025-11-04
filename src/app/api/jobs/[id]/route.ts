@@ -1,18 +1,35 @@
 import { NextRequest, NextResponse } from "next/server";
-
-const JOBS = [
-  { id: "job-1", title: "Frontend Engineer", company: "Acme Corp", location: "Remote", description: "Build delightful UIs with React and TypeScript." },
-  { id: "job-2", title: "Backend Engineer", company: "Globex", location: "New York, NY", description: "Design scalable APIs and services in Node.js." },
-  { id: "job-3", title: "Fullstack Developer", company: "Initech", location: "San Francisco, CA", description: "Ship features across the stack in a collaborative team." },
-];
+import { createClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
 
+// GET /api/jobs/[id] - Fetch a specific job by ID
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
-  const id = params.id;
-  const job = JOBS.find((j) => j.id === id);
-  if (!job) {
-    return NextResponse.json({ error: "NOT_FOUND" }, { status: 404 });
+  try {
+    const supabase = await createClient();
+    const jobId = params.id;
+    
+    // Fetch job by ID
+    const { data, error } = await supabase
+      .from('jobs')
+      .select('*')
+      .eq('id', jobId)
+      .single();
+    
+    if (error || !data) {
+      console.error('Error fetching job:', error);
+      return NextResponse.json(
+        { error: "Job not found" },
+        { status: 404 }
+      );
+    }
+    
+    return NextResponse.json(data);
+  } catch (error: any) {
+    console.error('Unexpected error:', error);
+    return NextResponse.json(
+      { error: "Internal server error", details: error.message },
+      { status: 500 }
+    );
   }
-  return NextResponse.json(job);
 }

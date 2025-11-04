@@ -8,5 +8,10 @@
     "jobId": "job-2",
     "status": "Applied",
     "appliedAt": "2025-10-23T20:03:52.098Z"
+  },
+  {
+    "jobId": "job-3",
+    "status": "Applied",
+    "appliedAt": "2025-11-04T01:08:53.470Z"
   }
 ]
