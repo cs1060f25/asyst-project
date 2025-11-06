@@ -49,8 +49,9 @@ export default function JobDetailsPage() {
         if (!mounted) return;
         setJob(jobData as Job);
         setApps(appsData as Application[]);
-      } catch (e: any) {
-        setError(e.message || "Failed to load job");
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Failed to load job";
+        setError(message);
       } finally {
         if (mounted) setLoading(false);
       }
@@ -58,7 +59,6 @@ export default function JobDetailsPage() {
     return () => {
       mounted = false;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [jobId]);
 
   async function handleApply() {
@@ -89,8 +89,9 @@ export default function JobDetailsPage() {
       }
       // After successful apply, return to dashboard
       router.push("/candidate");
-    } catch (e: any) {
-      setError(e.message || "Failed to apply");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to apply";
+      setError(message);
     } finally {
       setSubmitting(false);
     }

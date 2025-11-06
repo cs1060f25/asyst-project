@@ -20,7 +20,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ jo
     }
     
     return NextResponse.json(result.application);
-  } catch (e: any) {
+  } catch (error) {
+    console.error('Error updating application status:', error);
     return NextResponse.json({ error: "BAD_REQUEST" }, { status: 400 });
   }
 }

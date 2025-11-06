@@ -16,6 +16,21 @@ export type ApplicationStatus =
   | 'rejected';
 
 // =============================================
+// JSONB FIELD TYPES
+// =============================================
+
+// Type for supplemental answers in applications
+export type SupplementalAnswers = Record<string, string>;
+
+// Type for job requirements (JSONB field)
+export interface JobRequirements {
+  skills?: string[];
+  experience?: string;
+  education?: string;
+  [key: string]: unknown;
+}
+
+// =============================================
 // TABLE: jobs
 // =============================================
 export interface Job {
@@ -26,7 +41,7 @@ export interface Job {
   description: string | null;
   location: string | null;
   salary_range: string | null;
-  requirements: Record<string, any> | null;  // JSONB
+  requirements: JobRequirements | null;  // JSONB
   status: JobStatus;
   deadline: string | null;     // ISO timestamp
   created_at: string;          // ISO timestamp
@@ -41,7 +56,7 @@ export interface JobInsert {
   description?: string | null;
   location?: string | null;
   salary_range?: string | null;
-  requirements?: Record<string, any> | null;
+  requirements?: JobRequirements | null;
   status?: JobStatus;
   deadline?: string | null;
 }
@@ -54,7 +69,7 @@ export interface JobUpdate {
   description?: string | null;
   location?: string | null;
   salary_range?: string | null;
-  requirements?: Record<string, any> | null;
+  requirements?: JobRequirements | null;
   status?: JobStatus;
   deadline?: string | null;
 }
@@ -69,7 +84,7 @@ export interface Application {
   status: ApplicationStatus;
   resume_url: string | null;
   cover_letter: string | null;
-  supplemental_answers: Record<string, any> | null;  // JSONB
+  supplemental_answers: SupplementalAnswers | null;  // JSONB
   applied_at: string;            // ISO timestamp
   updated_at: string;            // ISO timestamp
 }
@@ -81,7 +96,7 @@ export interface ApplicationInsert {
   status?: ApplicationStatus;
   resume_url?: string | null;
   cover_letter?: string | null;
-  supplemental_answers?: Record<string, any> | null;
+  supplemental_answers?: SupplementalAnswers | null;
 }
 
 // Type for updating an application (all fields optional)
@@ -89,7 +104,7 @@ export interface ApplicationUpdate {
   status?: ApplicationStatus;
   resume_url?: string | null;
   cover_letter?: string | null;
-  supplemental_answers?: Record<string, any> | null;
+  supplemental_answers?: SupplementalAnswers | null;
 }
 
 // =============================================

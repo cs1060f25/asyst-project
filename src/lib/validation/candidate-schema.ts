@@ -1,10 +1,4 @@
 import { z } from 'zod';
-import type { 
-  CandidateProfileInsert, 
-  CandidateProfileUpdate,
-  WorkExperience,
-  Certification 
-} from '@/lib/types/database';
 
 /**
  * Validation Schema for Candidate Profile Data

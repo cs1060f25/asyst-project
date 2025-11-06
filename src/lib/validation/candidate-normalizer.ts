@@ -1,9 +1,8 @@
 import type { 
-  CandidateProfile, 
   CandidateProfileInsert, 
   CandidateProfileUpdate,
   WorkExperience,
-  Certification 
+  Certification
 } from '@/lib/types/database';
 
 /**
@@ -240,7 +239,7 @@ export function normalizeOfferDeadline(deadline: string): string | null {
 export function normalizeCandidateData(
   data: Partial<CandidateProfileInsert | CandidateProfileUpdate>
 ): Partial<CandidateProfileInsert | CandidateProfileUpdate> {
-  const normalized: any = {};
+  const normalized: Partial<CandidateProfileInsert | CandidateProfileUpdate> = {};
   
   // Normalize basic fields
   if (data.name !== undefined) {

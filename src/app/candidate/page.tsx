@@ -38,7 +38,7 @@ export default function CandidatePage() {
         if (!mounted) return;
         setJobs(jobsData as Job[]);
         setApps(appsData as Application[]);
-      } catch (_) {
+      } catch (_error) {
         // ignore
       } finally {
         if (mounted) setLoading(false);
@@ -97,8 +97,9 @@ export default function CandidatePage() {
           { jobId, status: data.status as Application["status"], appliedAt: new Date().toISOString() },
         ]);
       }
-    } catch (e: any) {
-      setError(e.message || "Failed to apply");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to apply";
+      setError(message);
     } finally {
       setSubmitting(null);
     }

@@ -25,7 +25,8 @@ export async function POST(req: NextRequest) {
     }
     const result = await applyToJob(jobId, details);
     return NextResponse.json(result);
-  } catch (e: any) {
+  } catch (error) {
+    console.error('Error applying to job:', error);
     return NextResponse.json({ error: "BAD_REQUEST" }, { status: 400 });
   }
 }

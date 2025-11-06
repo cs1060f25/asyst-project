@@ -50,7 +50,7 @@ export default function ProfilePage() {
         if (mounted) {
           setProfile(data);
         }
-      } catch (e) {
+      } catch (_error) {
         // ignore
       } finally {
         if (mounted) setLoading(false);
@@ -88,8 +88,9 @@ export default function ProfilePage() {
       }
       const data = (await res.json()) as Profile;
       setProfile(data);
-    } catch (e: any) {
-      setError(e.message || "Failed to save profile");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to save profile";
+      setError(message);
     } finally {
       setSaving(false);
     }
@@ -117,8 +118,12 @@ export default function ProfilePage() {
       }
       const data = (await res.json()) as Profile;
       setProfile(data);
-    } catch (e: any) {
-      const msg = String(e?.message || "Upload failed");
+    } catch (error) {
+      let msg = "Upload failed";
+      if (error instanceof Error) {
+        msg = error.message;
+      }
+      
       if (msg.includes("INVALID_FILE_TYPE")) {
         setUploadError("Invalid file type. Allowed: PDF, DOC, DOCX");
       } else if (msg.includes("FILE_TOO_LARGE")) {
@@ -142,8 +147,9 @@ export default function ProfilePage() {
       }
       const data = (await res.json()) as Profile;
       setProfile(data);
-    } catch (e: any) {
-      setUploadError(e.message || "Failed to delete resume");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to delete resume";
+      setUploadError(message);
     } finally {
       setUploading(false);
     }

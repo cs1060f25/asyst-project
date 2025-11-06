@@ -1,10 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { readProfile, writeProfile, type Profile } from "@/lib/storage";
-import { 
-  safeSaveCandidateProfile, 
-  safeUpdateCandidateProfile, 
-  fetchCandidateProfile 
-} from "@/lib/candidate-profile";
 
 export const runtime = "nodejs";
 
@@ -17,18 +12,6 @@ export async function GET() {
 export async function PUT(req: NextRequest) {
   try {
     const body = await req.json();
-    
-    // Check if this is a request for the new candidate profile system
-    if (body.user_id) {
-      // Use the new validation and normalization system
-      const result = await safeUpdateCandidateProfile(body.user_id, body);
-      
-      if (!result.success) {
-        return NextResponse.json({ error: result.error }, { status: 400 });
-      }
-      
-      return NextResponse.json(result.data);
-    }
     
     // Legacy Profile system (backward compatibility)
     const profileData = body as Partial<Profile>;
@@ -67,7 +50,8 @@ export async function PUT(req: NextRequest) {
 
     await writeProfile(updated);
     return NextResponse.json(updated);
-  } catch (e: any) {
+  } catch (error) {
+    console.error('Error updating profile:', error);
     return NextResponse.json({ error: "BAD_REQUEST" }, { status: 400 });
   }
 }

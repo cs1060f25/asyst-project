@@ -41,8 +41,9 @@ export default function SignUpPage() {
       // If email confirmation is enabled, user must check inbox.
       const redirect = search.get("redirect");
       router.push(redirect && redirect.startsWith("/") ? redirect : "/candidate");
-    } catch (err: any) {
-      setError(err.message || "Sign-up failed");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Sign-up failed";
+      setError(message);
     } finally {
       setLoading(false);
     }

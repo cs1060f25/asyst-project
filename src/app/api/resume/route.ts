@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "INVALID_FILE_TYPE" }, { status: 400 });
     }
 
-    if ((file as any).size && (file as any).size > MAX_RESUME_BYTES) {
+    if (file.size > MAX_RESUME_BYTES) {
       return NextResponse.json({ error: "FILE_TOO_LARGE" }, { status: 400 });
     }
 
@@ -39,7 +39,8 @@ export async function POST(req: NextRequest) {
     await writeProfile(updated);
 
     return NextResponse.json(updated);
-  } catch (e: any) {
+  } catch (error) {
+    console.error('Error uploading resume:', error);
     return NextResponse.json({ error: "UPLOAD_FAILED" }, { status: 500 });
   }
 }
@@ -57,7 +58,8 @@ export async function DELETE() {
     await writeProfile(updated);
 
     return NextResponse.json(updated);
-  } catch (e: any) {
+  } catch (error) {
+    console.error('Error deleting resume:', error);
     return NextResponse.json({ error: "DELETE_FAILED" }, { status: 500 });
   }
 }

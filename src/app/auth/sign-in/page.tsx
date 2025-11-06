@@ -35,8 +35,9 @@ export default function SignInPage() {
       if (error) throw error;
       const redirect = search.get("redirect");
       router.push(redirect && redirect.startsWith("/") ? redirect : "/candidate");
-    } catch (err: any) {
-      setError(err.message || "Sign-in failed");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Sign-in failed";
+      setError(message);
     } finally {
       setLoading(false);
     }
