@@ -31,10 +31,52 @@ export default function SignInPage() {
     }
     setLoading(true);
     try {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
-      const redirect = search.get("redirect");
-      router.push(redirect && redirect.startsWith("/") ? redirect : "/candidate");
+      
+      if (!data.user) {
+        throw new Error("Sign in failed");
+      }
+
+      // Detect user role to redirect correctly
+      const userId = data.user.id;
+      console.log("[Sign-in] Detecting role for user:", userId);
+      
+      // Check recruiter profile first
+      const { data: recruiterProfile, error: recruiterError } = await supabase
+        .from('recruiter_profiles')
+        .select('id')
+        .eq('user_id', userId)
+        .single();
+      
+      console.log("[Sign-in] Recruiter profile check:", { recruiterProfile, recruiterError });
+      
+      if (recruiterProfile && !recruiterError) {
+        const redirect = search.get("redirect");
+        console.log("[Sign-in] User is recruiter, redirecting to:", redirect || "/recruiter");
+        router.push(redirect && redirect.startsWith("/") ? redirect : "/recruiter");
+        return;
+      }
+      
+      // Check candidate profile
+      const { data: candidateProfile, error: candidateError } = await supabase
+        .from('candidate_profiles')
+        .select('id')
+        .eq('user_id', userId)
+        .single();
+      
+      console.log("[Sign-in] Candidate profile check:", { candidateProfile, candidateError });
+      
+      if (candidateProfile && !candidateError) {
+        const redirect = search.get("redirect");
+        console.log("[Sign-in] User is candidate, redirecting to:", redirect || "/candidate");
+        router.push(redirect && redirect.startsWith("/") ? redirect : "/candidate");
+        return;
+      }
+      
+      // No profile found - shouldn't happen, but redirect to role selection
+      console.warn("[Sign-in] No profile found for user:", userId);
+      router.push("/auth/role-selection");
     } catch (err: any) {
       setError(err.message || "Sign-in failed");
     } finally {
@@ -63,7 +105,7 @@ export default function SignInPage() {
         </Button>
       </form>
       <p className="text-sm">
-        Dont have an account? <Link className="underline" href="/auth/sign-up">Sign up</Link>
+        Don't have an account? <Link className="underline" href="/auth/role-selection">Get started</Link>
       </p>
     </div>
   );

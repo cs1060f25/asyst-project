@@ -59,6 +59,58 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(url);
   }
 
+  // Role-based access control for candidate and recruiter routes
+  const isRecruiterRoute = pathname === "/recruiter" || pathname.startsWith("/recruiter/");
+  const isCandidateRoute = pathname === "/candidate" || pathname.startsWith("/candidate/");
+
+  if (isRecruiterRoute || isCandidateRoute) {
+    try {
+      // Check candidate profiles
+      const { data: candidateData } = await supabase
+        .from('candidate_profiles')
+        .select('user_id')
+        .eq('user_id', session.user.id)
+        .single();
+
+      const isCandidate = !!candidateData;
+
+      // Check recruiter profiles  
+      const { data: recruiterData } = await supabase
+        .from('recruiter_profiles')
+        .select('user_id')
+        .eq('user_id', session.user.id)
+        .single();
+
+      const isRecruiter = !!recruiterData;
+
+      // If user has no role profile, redirect to role selection
+      if (!isCandidate && !isRecruiter) {
+        const url = req.nextUrl.clone();
+        url.pathname = "/auth/role-selection";
+        url.searchParams.set("redirect", pathname);
+        return NextResponse.redirect(url);
+      }
+
+      // Enforce role-based access
+      if (isRecruiterRoute && !isRecruiter) {
+        // Recruiters trying to access recruiter routes but they're candidates
+        const url = req.nextUrl.clone();
+        url.pathname = "/candidate";
+        return NextResponse.redirect(url);
+      }
+
+      if (isCandidateRoute && !isCandidate) {
+        // Candidates trying to access candidate routes but they're recruiters
+        const url = req.nextUrl.clone();
+        url.pathname = "/recruiter";
+        return NextResponse.redirect(url);
+      }
+    } catch (error) {
+      console.error("Error checking user role:", error);
+      // On error, allow through but log the issue
+    }
+  }
+
   return res;
 }
 
