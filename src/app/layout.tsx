@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import AuthMenu from "@/components/auth/AuthMenu";
+import ClientNavLinks from "@/components/auth/ClientNavLinks";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
@@ -32,10 +34,10 @@ export default function RootLayout({
           <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
             <Link href="/" className="font-semibold">JobApply</Link>
             <nav className="flex items-center gap-4 text-sm">
-              <Link href="/" className="hover:underline">Home</Link>
-              <Link href="/candidate" className="hover:underline">Candidate</Link>
-              <Link href="/recruiter" className="hover:underline">Recruiter</Link>
-              <Link href="/profile" className="hover:underline">Profile</Link>
+              <ClientNavLinks />
+              <div className="ml-4 pl-4 border-l">
+                <AuthMenu />
+              </div>
             </nav>
           </div>
         </header>

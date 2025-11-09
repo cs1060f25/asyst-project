@@ -4,6 +4,9 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { Modal } from "@/components/ui/modal";
 
 import { Job } from "@/lib/applications";
 
@@ -21,6 +24,8 @@ export default function CandidatePage() {
   const [query, setQuery] = useState("");
   const [submitting, setSubmitting] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [suppModalOpen, setSuppModalOpen] = useState(false);
+  const [pendingJobForSupp, setPendingJobForSupp] = useState<string | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -95,7 +100,6 @@ export default function CandidatePage() {
       if (!res.ok) {
         throw new Error(data?.error || "Failed to apply");
       }
-      // If created, append; if not, leave as-is.
       if (data.created) {
         setApps((prev) => [
           ...prev,
@@ -133,12 +137,12 @@ export default function CandidatePage() {
           const isApplied = !!status;
           return (
             <div key={job.id} className="p-4 flex items-center justify-between gap-4">
-              <div className="min-w-0">
-                <div className="font-medium truncate">{job.title}</div>
+              <Link href={`/jobs/${job.id}`} className="min-w-0 group">
+                <div className="font-medium truncate group-hover:underline">{job.title}</div>
                 <div className="text-sm text-muted-foreground truncate">
                   {job.company} • {job.location}
                 </div>
-              </div>
+              </Link>
               <div className="flex items-center gap-3">
                 {isApplied && status ? (
                   <span className={`text-xs px-2 py-1 rounded border font-medium ${getStatusColor(status)}`}>{status}</span>
@@ -157,6 +161,33 @@ export default function CandidatePage() {
           <div className="p-4 text-sm text-muted-foreground">No jobs match your search.</div>
         )}
       </div>
+
+      <Modal
+        open={suppModalOpen}
+        onClose={() => setSuppModalOpen(false)}
+        title="Additional Questions Required"
+        description="This application requires you to answer a few supplemental questions before submitting."
+        actions={
+          <>
+            <Button variant="outline" onClick={() => setSuppModalOpen(false)}>Cancel</Button>
+            <Button
+              onClick={() => {
+                if (pendingJobForSupp) {
+                  const id = pendingJobForSupp;
+                  setSuppModalOpen(false);
+                  setPendingJobForSupp(null);
+                  router.push(`/jobs/${id}/supplemental`);
+                }
+              }}
+            >
+              Continue
+            </Button>
+          </>
+        }
+      >
+        <p className="text-sm">You will be taken to a separate page to complete these questions.</p>
+      </Modal>
     </div>
   );
 }
+
