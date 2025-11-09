@@ -1,18 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { Modal } from "@/components/ui/modal";
 
-type Job = {
-  id: string;
-  title: string;
-  company: string;
-  location: string;
-};
+import { Job } from "@/lib/applications";
 
 type Application = {
   jobId: string;
@@ -84,20 +79,17 @@ export default function CandidatePage() {
   async function apply(jobId: string) {
     setSubmitting(jobId);
     setError(null);
+    
     try {
-      // First check if job has supplemental questions
-      const jobRes = await fetch(`/api/jobs/${jobId}`, { cache: "no-store" });
-      if (jobRes.ok) {
-        const jobData = await jobRes.json();
-        const hasSupp = Array.isArray(jobData?.supplementalQuestions) && jobData.supplementalQuestions.length > 0;
-        if (hasSupp) {
-          setPendingJobForSupp(jobId);
-          setSuppModalOpen(true);
-          return; // Stop here; user decides in modal
-        }
+      // Check if job has supplemental questions
+      const job = jobs.find(j => j.id === jobId);
+      if (job?.supplementalQuestions && job.supplementalQuestions.length > 0) {
+        // Redirect to supplemental questions page
+        router.push(`/candidate/apply/${jobId}`);
+        return;
       }
-
-      // No supplemental questions: proceed with one-click apply
+      
+      // No supplemental questions, apply directly
       const res = await fetch("/api/applications", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
