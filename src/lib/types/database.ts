@@ -237,3 +237,51 @@ export interface CandidateProfileUpdate {
   hackerrank_url?: string | null;
   referral_source?: string | null;
 }
+
+// =============================================
+// TABLE: recruiter_profiles
+// =============================================
+
+// Company size enum
+export type CompanySize = 'startup' | 'small' | 'medium' | 'large' | 'enterprise';
+
+// Main recruiter profile interface
+export interface RecruiterProfile {
+  id: string;                    // UUID
+  user_id: string;               // UUID, links to auth.users
+  name: string;                  // Required
+  email: string;                 // Required, lowercase normalized
+  company_name: string;          // Required
+  job_title: string;             // Required
+  company_size: CompanySize | null; // Optional
+  phone: string | null;          // Optional
+  linkedin_url: string | null;   // Optional
+  company_website: string | null; // Optional
+  created_at: string;            // ISO timestamp
+  updated_at: string;            // ISO timestamp
+}
+
+// Type for inserting a new recruiter profile (omits auto-generated fields)
+export interface RecruiterProfileInsert {
+  user_id: string;
+  name: string;
+  email: string;
+  company_name: string;
+  job_title: string;
+  company_size?: CompanySize | null;
+  phone?: string | null;
+  linkedin_url?: string | null;
+  company_website?: string | null;
+}
+
+// Type for updating a recruiter profile (all fields optional except user_id)
+export interface RecruiterProfileUpdate {
+  name?: string;
+  email?: string;
+  company_name?: string;
+  job_title?: string;
+  company_size?: CompanySize | null;
+  phone?: string | null;
+  linkedin_url?: string | null;
+  company_website?: string | null;
+}
