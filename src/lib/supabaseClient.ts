@@ -1,7 +1,8 @@
-import { createClient } from "@supabase/supabase-js";
+import { createBrowserClient } from "@supabase/ssr";
 
-// Public client for browser usage; stores session in localStorage by default
-export const supabase = createClient(
+// SSR-compatible browser client that stores session in cookies (not localStorage)
+// This allows the server-side API routes to read the session
+export const supabase = createBrowserClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL as string,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string
 );

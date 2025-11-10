@@ -36,8 +36,8 @@ export default function CandidatePage() {
         ]);
         const [jobsData, appsData] = await Promise.all([jobsRes.json(), appsRes.json()]);
         if (!mounted) return;
-        setJobs(jobsData as Job[]);
-        setApps(appsData as Application[]);
+        setJobs(Array.isArray(jobsData) ? jobsData : []);
+        setApps(Array.isArray(appsData) ? appsData : []);
       } catch (_) {
         // ignore
       } finally {
@@ -93,7 +93,7 @@ export default function CandidatePage() {
       const res = await fetch("/api/applications", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ jobId }),
+        body: JSON.stringify({ jobId }),  // API will handle the format conversion
       });
       const data = await res.json();
       if (!res.ok) {
