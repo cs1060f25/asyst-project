@@ -4,7 +4,10 @@ import { createClient } from "@/lib/supabase/server";
 import type { 
   CandidateProfile, 
   CandidateProfileInsert, 
-  CandidateProfileUpdate 
+  CandidateProfileUpdate,
+  RecruiterProfile,
+  RecruiterProfileInsert,
+  RecruiterProfileUpdate
 } from "@/lib/types/database";
 
 const DEFAULT_UPLOAD_DIR = path.join(process.cwd(), "public", "uploads");
@@ -229,5 +232,157 @@ export async function deleteCandidateProfile(userId: string): Promise<void> {
   } catch (error) {
     console.error('Error deleting candidate profile:', error);
     throw error;
+  }
+}
+
+// =============================================
+// RECRUITER PROFILE DATABASE OPERATIONS
+// =============================================
+
+/**
+ * Get recruiter profile by user ID from Supabase
+ * @param userId - The user ID to look up
+ * @returns Promise<RecruiterProfile | null>
+ */
+export async function getRecruiterProfile(userId: string): Promise<RecruiterProfile | null> {
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from('recruiter_profiles')
+      .select('*')
+      .eq('user_id', userId)
+      .single();
+
+    if (error) {
+      if (error.code === 'PGRST116') {
+        // No rows returned
+        return null;
+      }
+      throw error;
+    }
+
+    return data as RecruiterProfile;
+  } catch (error) {
+    console.error('Error fetching recruiter profile:', error);
+    throw error;
+  }
+}
+
+/**
+ * Create a new recruiter profile in Supabase
+ * @param profile - The profile data to insert
+ * @returns Promise<RecruiterProfile>
+ */
+export async function createRecruiterProfile(profile: RecruiterProfileInsert): Promise<RecruiterProfile> {
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from('recruiter_profiles')
+      .insert(profile)
+      .select()
+      .single();
+
+    if (error) {
+      throw error;
+    }
+
+    return data as RecruiterProfile;
+  } catch (error) {
+    console.error('Error creating recruiter profile:', error);
+    throw error;
+  }
+}
+
+/**
+ * Update an existing recruiter profile in Supabase
+ * @param userId - The user ID to update
+ * @param updates - The fields to update
+ * @returns Promise<RecruiterProfile>
+ */
+export async function updateRecruiterProfile(
+  userId: string, 
+  updates: RecruiterProfileUpdate
+): Promise<RecruiterProfile> {
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from('recruiter_profiles')
+      .update(updates)
+      .eq('user_id', userId)
+      .select()
+      .single();
+
+    if (error) {
+      throw error;
+    }
+
+    return data as RecruiterProfile;
+  } catch (error) {
+    console.error('Error updating recruiter profile:', error);
+    throw error;
+  }
+}
+
+/**
+ * Delete a recruiter profile from Supabase
+ * @param userId - The user ID to delete
+ * @returns Promise<void>
+ */
+export async function deleteRecruiterProfile(userId: string): Promise<void> {
+  try {
+    const supabase = await createClient();
+    const { error } = await supabase
+      .from('recruiter_profiles')
+      .delete()
+      .eq('user_id', userId);
+
+    if (error) {
+      throw error;
+    }
+  } catch (error) {
+    console.error('Error deleting recruiter profile:', error);
+    throw error;
+  }
+}
+
+// =============================================
+// USER ROLE UTILITIES
+// =============================================
+
+/**
+ * Get user role by checking which profile table has their user_id
+ * @param userId - The user ID to check
+ * @returns Promise<'candidate' | 'recruiter' | null>
+ */
+export async function getUserRole(userId: string): Promise<'candidate' | 'recruiter' | null> {
+  try {
+    const supabase = await createClient();
+    
+    // Check candidate profiles
+    const { data: candidateData } = await supabase
+      .from('candidate_profiles')
+      .select('user_id')
+      .eq('user_id', userId)
+      .single();
+
+    if (candidateData) {
+      return 'candidate';
+    }
+
+    // Check recruiter profiles  
+    const { data: recruiterData } = await supabase
+      .from('recruiter_profiles')
+      .select('user_id')
+      .eq('user_id', userId)
+      .single();
+
+    if (recruiterData) {
+      return 'recruiter';
+    }
+
+    return null;
+  } catch (error) {
+    console.error('Error getting user role:', error);
+    return null;
   }
 }

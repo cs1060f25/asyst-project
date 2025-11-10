@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabaseClient";
 import { Button } from "@/components/ui/button";
+import { Modal } from "@/components/ui/modal";
 import type { Job } from "@/lib/types/database";
 import type { User } from "@supabase/supabase-js";
 
@@ -20,6 +21,7 @@ export default function JobDetailsPage() {
   const [alreadyApplied, setAlreadyApplied] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [suppModalOpen, setSuppModalOpen] = useState(false);
 
   // Load job data and check authentication
   useEffect(() => {
@@ -113,7 +115,17 @@ export default function JobDetailsPage() {
         .eq('user_id', user.id)
         .maybeSingle();
 
-      // Submit application to API
+      // Check if job has supplemental questions - if so, redirect to supplemental page
+      if (job?.requirements && typeof job.requirements === 'object') {
+        const requirements = job.requirements as Record<string, any>;
+        const hasSupp = Array.isArray(requirements.supplementalQuestions) && requirements.supplementalQuestions.length > 0;
+        if (hasSupp) {
+          setSuppModalOpen(true);
+          return;
+        }
+      }
+
+      // No supplemental questions; proceed to apply directly
       const response = await fetch('/api/applications', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -282,6 +294,22 @@ export default function JobDetailsPage() {
           </div>
         )}
       </div>
+
+      <Modal
+        open={suppModalOpen}
+        onClose={() => setSuppModalOpen(false)}
+        title="Additional Questions Required"
+        description="This application requires supplemental questions to be answered on the next page."
+        actions={
+          <>
+            <Button variant="outline" onClick={() => setSuppModalOpen(false)}>Cancel</Button>
+            <Button onClick={() => { setSuppModalOpen(false); router.push(`/jobs/${jobId}/supplemental`); }}>Continue</Button>
+          </>
+        }
+      >
+        <p className="text-sm">You will be taken to a separate page to complete the required questions.</p>
+      </Modal>
     </div>
   );
 }
+

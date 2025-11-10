@@ -1,14 +1,29 @@
 import { promises as fs } from "fs";
 import path from "path";
 
+export type SupplementalQuestion = {
+  id: string;
+  question: string;
+  type: "text" | "textarea" | "select";
+  options?: string[]; // For select type questions
+  required: boolean;
+};
+
 export type Job = {
   id: string;
   title: string;
   company: string;
   location: string;
+  description?: string;
+  supplementalQuestions?: SupplementalQuestion[];
 };
 
 export type ApplicationStatus = "Applied" | "Under Review" | "Interview" | "Offer" | "Hired" | "Rejected";
+
+export type SupplementalAnswer = {
+  questionId: string;
+  answer: string;
+};
 
 export type ApplicationDetails = {
   coverLetter?: string;
@@ -19,6 +34,7 @@ export type Application = {
   jobId: string;
   status: ApplicationStatus;
   appliedAt: string;
+  supplementalAnswers?: SupplementalAnswer[];
   details?: ApplicationDetails;
 };
 
@@ -53,7 +69,7 @@ export function getApplicationStatus(apps: Application[], jobId: string): Applic
   return app ? app.status : null;
 }
 
-export async function applyToJob(jobId: string, details?: ApplicationDetails): Promise<{ created: boolean; status: ApplicationStatus }> {
+export async function applyToJob(jobId: string, supplementalAnswers?: SupplementalAnswer[], details?: ApplicationDetails): Promise<{ created: boolean; status: ApplicationStatus }> {
   const id = jobId.trim();
   if (!id) {
     throw new Error("INVALID_JOB_ID");
@@ -67,6 +83,7 @@ export async function applyToJob(jobId: string, details?: ApplicationDetails): P
     jobId: id,
     status: "Applied",
     appliedAt: new Date().toISOString(),
+    supplementalAnswers: supplementalAnswers || [],
     details: details && (details.coverLetter || (details.answers && Object.keys(details.answers).length)) ? details : undefined,
   };
   const updated = [...apps, newApp];

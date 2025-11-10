@@ -288,15 +288,87 @@ export function normalizeCandidateData(
   if (data.portfolio_url !== undefined) {
     normalized.portfolio_url = data.portfolio_url ? normalizeUrl(data.portfolio_url) : null;
   }
+
+  // Additional URLs
+  if (data.website_url !== undefined) {
+    normalized.website_url = data.website_url ? normalizeUrl(data.website_url) : null;
+  }
+  if (data.twitter_url !== undefined) {
+    normalized.twitter_url = data.twitter_url ? normalizeUrl(data.twitter_url) : null;
+  }
+  if (data.mastodon_url !== undefined) {
+    normalized.mastodon_url = data.mastodon_url ? normalizeUrl(data.mastodon_url) : null;
+  }
+  if (data.dribbble_url !== undefined) {
+    normalized.dribbble_url = data.dribbble_url ? normalizeUrl(data.dribbble_url) : null;
+  }
+  if (data.leetcode_url !== undefined) {
+    normalized.leetcode_url = data.leetcode_url ? normalizeUrl(data.leetcode_url) : null;
+  }
+  if (data.codeforces_url !== undefined) {
+    normalized.codeforces_url = data.codeforces_url ? normalizeUrl(data.codeforces_url) : null;
+  }
+  if (data.hackerrank_url !== undefined) {
+    normalized.hackerrank_url = data.hackerrank_url ? normalizeUrl(data.hackerrank_url) : null;
+  }
   
   // Normalize deadline
   if (data.offer_deadline !== undefined) {
     normalized.offer_deadline = data.offer_deadline ? normalizeOfferDeadline(data.offer_deadline) : null;
   }
+
+  // Arrays and lists
+  const normalizeStringArray = (arr: unknown): string[] =>
+    Array.isArray(arr)
+      ? [...new Set(arr.filter(x => typeof x === 'string' && x.trim()).map(x => x.trim()))]
+      : [];
+
+  if (data.employment_types !== undefined) {
+    normalized.employment_types = normalizeStringArray(data.employment_types as any);
+  }
+  if (data.languages !== undefined) {
+    normalized.languages = normalizeStringArray(data.languages as any);
+  }
+  if (data.frameworks !== undefined) {
+    normalized.frameworks = normalizeStringArray(data.frameworks as any);
+  }
+
+  // Simple strings
+  const trimOrNull = (v: any) => (typeof v === 'string' && v.trim() ? v.trim() : null);
+  if (data.location !== undefined) normalized.location = trimOrNull(data.location);
+  if (data.school !== undefined) normalized.school = trimOrNull(data.school);
+  if (data.degree_level !== undefined) normalized.degree_level = trimOrNull(data.degree_level);
+  if (data.graduation_date !== undefined) normalized.graduation_date = trimOrNull(data.graduation_date);
+  if (data.work_authorization !== undefined) normalized.work_authorization = trimOrNull(data.work_authorization);
+  if (data.pronouns !== undefined) normalized.pronouns = trimOrNull(data.pronouns);
+  if (data.timezone !== undefined) normalized.timezone = trimOrNull(data.timezone);
+  if (data.referral_source !== undefined) normalized.referral_source = trimOrNull(data.referral_source);
+
+  // Numeric
+  if (data.gpa !== undefined) {
+    const n = typeof data.gpa === 'number' ? data.gpa : parseFloat(String(data.gpa));
+    normalized.gpa = isFinite(n) ? n : null;
+  }
+  if (data.years_experience !== undefined) {
+    const n = typeof data.years_experience === 'number' ? data.years_experience : parseInt(String(data.years_experience), 10);
+    normalized.years_experience = Number.isInteger(n) ? n : null;
+  }
+
+  // Booleans
+  const toBoolOrNull = (v: any) => (typeof v === 'boolean' ? v : v == null ? null : ['true','1','yes','on'].includes(String(v).toLowerCase()) ? true : ['false','0','no','off'].includes(String(v).toLowerCase()) ? false : null);
+  if (data.requires_sponsorship !== undefined) normalized.requires_sponsorship = toBoolOrNull(data.requires_sponsorship);
+  if (data.open_to_relocation !== undefined) normalized.open_to_relocation = toBoolOrNull(data.open_to_relocation);
+  if (data.eeo_prefer_not_to_say !== undefined) normalized.eeo_prefer_not_to_say = toBoolOrNull(data.eeo_prefer_not_to_say);
+
+  // EEO strings
+  if (data.eeo_gender !== undefined) normalized.eeo_gender = trimOrNull(data.eeo_gender);
+  if (data.eeo_race_ethnicity !== undefined) normalized.eeo_race_ethnicity = trimOrNull(data.eeo_race_ethnicity);
+  if (data.eeo_veteran_status !== undefined) normalized.eeo_veteran_status = trimOrNull(data.eeo_veteran_status);
+  if (data.eeo_disability_status !== undefined) normalized.eeo_disability_status = trimOrNull(data.eeo_disability_status);
   
   // Preserve user_id if present (no normalization needed)
-  if (data.user_id !== undefined) {
-    normalized.user_id = data.user_id;
+  if (data && typeof data === 'object' && 'user_id' in (data as any)) {
+    normalized.user_id = (data as any).user_id;
   }
   
   return normalized;

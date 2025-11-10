@@ -37,7 +37,6 @@ export default function AuthMenu() {
     return (
       <div className="flex items-center gap-3 text-sm">
         <Link href="/auth/sign-in" className="hover:underline">Sign in</Link>
-        <Link href="/auth/sign-up" className="hover:underline">Sign up</Link>
       </div>
     );
   }
