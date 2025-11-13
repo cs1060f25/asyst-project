@@ -1,26 +1,105 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Users, Briefcase } from "lucide-react";
+import { supabase } from "@/lib/supabaseClient";
 
 export default function RoleSelectionPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirect = searchParams.get("redirect");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleRoleSelection = (role: "candidate" | "recruiter") => {
-    const params = new URLSearchParams();
-    if (redirect) {
-      params.set("redirect", redirect);
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const user = sessionData.session?.user;
+        if (!user) {
+          if (mounted) setLoading(false);
+          return; // unauthenticated users will see buttons that go to sign-up
+        }
+
+        // If already has a role, send to dashboard
+        const [{ data: recruiter }, { data: candidate }] = await Promise.all([
+          supabase.from("recruiter_profiles").select("id").eq("user_id", user.id).maybeSingle(),
+          supabase.from("candidate_profiles").select("id").eq("user_id", user.id).maybeSingle(),
+        ]);
+
+        if (!mounted) return;
+        if (recruiter) {
+          router.replace("/recruiter");
+          return;
+        }
+        if (candidate) {
+          router.replace("/candidate");
+          return;
+        }
+      } catch (_) {}
+      if (mounted) setLoading(false);
+    })();
+    return () => { mounted = false };
+  }, [router]);
+
+  async function handleRoleSelection(role: "candidate" | "recruiter") {
+    setError(null);
+    setLoading(true);
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const user = sessionData.session?.user;
+      const params = new URLSearchParams();
+      if (redirect) params.set("redirect", redirect);
+
+      // If not authenticated, fall back to existing sign-up routes
+      if (!user) {
+        if (role === "candidate") {
+          router.push(`/auth/sign-up?${params.toString()}`);
+        } else {
+          router.push(`/auth/recruiter-signup?${params.toString()}`);
+        }
+        return;
+      }
+
+      // Authenticated: create profile and redirect, no re-signup
+      if (role === "candidate") {
+        const { data: existing } = await supabase
+          .from("candidate_profiles")
+          .select("id")
+          .eq("user_id", user.id)
+          .maybeSingle();
+        if (!existing) {
+          const { error: insertError } = await supabase
+            .from("candidate_profiles")
+            .insert({ user_id: user.id, name: user.email?.split("@")[0] || "", email: user.email ?? null })
+            .single();
+          if (insertError) throw insertError;
+        }
+        router.replace(redirect && redirect.startsWith("/") ? redirect : "/candidate");
+      } else {
+        const { data: existing } = await supabase
+          .from("recruiter_profiles")
+          .select("id")
+          .eq("user_id", user.id)
+          .maybeSingle();
+        if (!existing) {
+          const { error: insertError } = await supabase
+            .from("recruiter_profiles")
+            .insert({ user_id: user.id, name: user.email?.split("@")[0] || "", email: user.email ?? null, company: null, title: null })
+            .single();
+          if (insertError) throw insertError;
+        }
+        router.replace(redirect && redirect.startsWith("/") ? redirect : "/recruiter");
+      }
+    } catch (e: any) {
+      setError(e?.message || "Failed to set role");
+    } finally {
+      setLoading(false);
     }
-    
-    if (role === "candidate") {
-      router.push(`/auth/sign-up?${params.toString()}`);
-    } else {
-      router.push(`/auth/recruiter-signup?${params.toString()}`);
-    }
-  };
+  }
 
   return (
     <div className="max-w-4xl w-full space-y-8">
@@ -30,6 +109,12 @@ export default function RoleSelectionPage() {
           Choose how you'd like to get started
         </p>
       </div>
+
+      {error && (
+        <div className="text-center">
+          <p className="text-sm text-red-600">{error}</p>
+        </div>
+      )}
 
       <div className="grid md:grid-cols-2 gap-6">
         {/* Candidate Card */}
@@ -69,7 +154,7 @@ export default function RoleSelectionPage() {
             </li>
           </ul>
 
-          <Button className="w-full" size="lg">
+          <Button className="w-full" size="lg" disabled={loading}>
             Continue as Candidate
           </Button>
         </div>
@@ -111,7 +196,7 @@ export default function RoleSelectionPage() {
             </li>
           </ul>
 
-          <Button className="w-full" variant="secondary" size="lg">
+          <Button className="w-full" variant="secondary" size="lg" disabled={loading}>
             Continue as Recruiter
           </Button>
         </div>

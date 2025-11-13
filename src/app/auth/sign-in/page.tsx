@@ -19,6 +19,7 @@ export default function SignInPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [needsConfirmation, setNeedsConfirmation] = useState(false);
   const [loading, setLoading] = useState(false);
 
   async function onSubmit(e: React.FormEvent) {
@@ -78,7 +79,12 @@ export default function SignInPage() {
       console.warn("[Sign-in] No profile found for user:", userId);
       router.push("/auth/role-selection");
     } catch (err: any) {
-      setError(err.message || "Sign-in failed");
+      const msg = err?.message || "Sign-in failed";
+      setError(msg);
+      // Detect unconfirmed email
+      if (msg.toLowerCase().includes("confirm") || msg.toLowerCase().includes("email not confirmed")) {
+        setNeedsConfirmation(true);
+      }
     } finally {
       setLoading(false);
     }
@@ -100,6 +106,30 @@ export default function SignInPage() {
           <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" />
         </div>
         {error && <p className="text-sm text-red-600">{error}</p>}
+        {needsConfirmation && (
+          <div className="space-y-2">
+            <p className="text-sm">Didn&apos;t receive a confirmation email?</p>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={!email || loading}
+              onClick={async () => {
+                setLoading(true);
+                try {
+                  const { error: resendError } = await supabase.auth.resend({ type: 'signup', email });
+                  if (resendError) throw resendError;
+                  setError("Confirmation email sent. Please check your inbox (and spam folder).");
+                } catch (e: any) {
+                  setError(e?.message || "Failed to resend confirmation email");
+                } finally {
+                  setLoading(false);
+                }
+              }}
+            >
+              Resend confirmation email
+            </Button>
+          </div>
+        )}
         <Button type="submit" disabled={loading} className="w-full">
           {loading ? "Signing in..." : "Sign in"}
         </Button>

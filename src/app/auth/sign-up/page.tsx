@@ -39,7 +39,12 @@ export default function SignUpPage() {
     setLoading(true);
     try {
       // 1. Sign up the user with Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.signUp({ email, password });
+      const redirectTo = typeof window !== 'undefined' ? `${window.location.origin}/auth/callback` : undefined;
+      const { data: authData, error: authError } = await supabase.auth.signUp({ 
+        email, 
+        password,
+        options: redirectTo ? { emailRedirectTo: redirectTo } : undefined,
+      });
       
       if (authError) {
         // Handle duplicate email with user-friendly message
@@ -135,6 +140,31 @@ export default function SignUpPage() {
           {loading ? "Creating..." : "Create account"}
         </Button>
       </form>
+      <div className="text-sm space-y-2">
+        <p>
+          Didn't receive a confirmation email?
+        </p>
+        <Button
+          type="button"
+          variant="outline"
+          disabled={!email || loading}
+          onClick={async () => {
+            setLoading(true);
+            setError(null);
+            try {
+              const { error: resendError } = await supabase.auth.resend({ type: 'signup', email });
+              if (resendError) throw resendError;
+              setError("Confirmation email sent. Please check your inbox (and spam folder).");
+            } catch (err: any) {
+              setError(err.message || "Failed to resend confirmation email");
+            } finally {
+              setLoading(false);
+            }
+          }}
+        >
+          Resend confirmation email
+        </Button>
+      </div>
       <p className="text-sm">
         Already have an account? <Link className="underline" href="/auth/sign-in">Sign in</Link>
       </p>
