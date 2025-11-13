@@ -1,18 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import {
-  readProfile,
-  writeProfile,
-  saveResumeFile,
-  deleteResumeFileIfExists,
-  isAllowedResumeType,
-  MAX_RESUME_BYTES,
-} from "@/lib/storage";
+import { createClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
 
 // Upload or replace resume
 export async function POST(req: NextRequest) {
   try {
+    const supabase = await createClient();
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData.session?.user?.id;
+    if (!userId) return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 });
+
     const form = await req.formData();
     const file = form.get("file");
 
@@ -20,26 +18,59 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "MISSING_FILE" }, { status: 400 });
     }
 
-    if (!isAllowedResumeType(file.type)) {
+    const ALLOWED_TYPES = new Set([
+      "application/pdf",
+      "application/msword",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    ]);
+    const MAX_BYTES = 5 * 1024 * 1024; // 5MB
+
+    if (!ALLOWED_TYPES.has(file.type)) {
       return NextResponse.json({ error: "INVALID_FILE_TYPE" }, { status: 400 });
     }
-
-    if ((file as any).size && (file as any).size > MAX_RESUME_BYTES) {
+    if (file.size > MAX_BYTES) {
       return NextResponse.json({ error: "FILE_TOO_LARGE" }, { status: 400 });
     }
 
-    const existing = await readProfile();
-    // Save new resume
-    const saved = await saveResumeFile(file);
+    // Upload to Supabase Storage (bucket: "resumes")
+    const arrayBuffer = await file.arrayBuffer();
+    const path = `${userId}/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
+    const { error: uploadError } = await supabase.storage.from("resumes").upload(path, arrayBuffer, {
+      contentType: file.type,
+      upsert: true,
+    });
+    if (uploadError) {
+      return NextResponse.json({ error: "UPLOAD_FAILED" }, { status: 500 });
+    }
 
-    // Delete old resume if exists
-    await deleteResumeFileIfExists(existing.resume ?? null);
+    // Get public URL
+    const { data: publicData } = await supabase.storage.from("resumes").getPublicUrl(path);
+    const publicUrl = publicData.publicUrl;
 
-    const updated = { ...existing, resume: saved };
-    await writeProfile(updated);
+    // Update candidate profile resume_url
+    const { error: updateError } = await supabase
+      .from('candidate_profiles')
+      .update({ resume_url: publicUrl })
+      .eq('user_id', userId);
+    if (updateError) {
+      return NextResponse.json({ error: updateError.message }, { status: 400 });
+    }
 
-    return NextResponse.json(updated);
-  } catch (e: any) {
+    // Return legacy profile-shaped response
+    return NextResponse.json({
+      name: "",
+      email: "",
+      education: "",
+      resume: {
+        url: publicUrl,
+        originalName: file.name,
+        size: file.size,
+        mimeType: file.type,
+        updatedAt: new Date().toISOString(),
+      },
+      offerDeadline: null,
+    });
+  } catch {
     return NextResponse.json({ error: "UPLOAD_FAILED" }, { status: 500 });
   }
 }
@@ -47,17 +78,43 @@ export async function POST(req: NextRequest) {
 // Delete resume
 export async function DELETE() {
   try {
-    const existing = await readProfile();
-    if (!existing.resume) {
-      return NextResponse.json({ error: "NO_RESUME" }, { status: 400 });
+    const supabase = await createClient();
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData.session?.user?.id;
+    if (!userId) return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 });
+
+    // Fetch existing resume_url
+    const { data: profile } = await supabase
+      .from('candidate_profiles')
+      .select('resume_url')
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    const url = profile?.resume_url || null;
+
+    // Best-effort delete from storage if we can parse the path
+    if (url && url.includes('/object/public/resumes/')) {
+      const idx = url.indexOf('/object/public/resumes/');
+      const path = url.slice(idx + '/object/public/resumes/'.length);
+      await supabase.storage.from('resumes').remove([path]);
     }
 
-    await deleteResumeFileIfExists(existing.resume);
-    const updated = { ...existing, resume: null };
-    await writeProfile(updated);
+    // Update DB
+    const { error: updateError } = await supabase
+      .from('candidate_profiles')
+      .update({ resume_url: null })
+      .eq('user_id', userId);
+    if (updateError) return NextResponse.json({ error: updateError.message }, { status: 400 });
 
-    return NextResponse.json(updated);
-  } catch (e: any) {
+    return NextResponse.json({
+      name: "",
+      email: "",
+      education: "",
+      resume: null,
+      offerDeadline: null,
+    });
+  } catch {
     return NextResponse.json({ error: "DELETE_FAILED" }, { status: 500 });
   }
 }
+
