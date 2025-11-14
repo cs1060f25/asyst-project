@@ -5,6 +5,7 @@ import type {
   WorkExperience,
   Certification 
 } from '@/lib/types/database';
+import type { CandidateProfileInsertValidated, CandidateProfileUpdateValidated } from '@/lib/validation/candidate-schema';
 
 /**
  * Data Standardization & Validation Service
@@ -237,10 +238,12 @@ export function normalizeOfferDeadline(deadline: string): string | null {
  * @param data - Raw candidate profile data
  * @returns Normalized candidate profile data
  */
-export function normalizeCandidateData(
-  data: Partial<CandidateProfileInsert | CandidateProfileUpdate>
-): Partial<CandidateProfileInsert | CandidateProfileUpdate> {
-  const normalized: any = {};
+export function normalizeCandidateData(data: CandidateProfileInsertValidated): CandidateProfileInsertValidated;
+export function normalizeCandidateData(data: CandidateProfileUpdateValidated): CandidateProfileUpdateValidated;
+export function normalizeCandidateData<T extends Partial<CandidateProfileInsert> | Partial<CandidateProfileUpdate>>(
+  data: T
+): T {
+  const normalized: Record<string, unknown> = {};
   
   // Normalize basic fields
   if (data.name !== undefined) {
@@ -320,21 +323,21 @@ export function normalizeCandidateData(
   // Arrays and lists
   const normalizeStringArray = (arr: unknown): string[] =>
     Array.isArray(arr)
-      ? [...new Set(arr.filter(x => typeof x === 'string' && x.trim()).map(x => x.trim()))]
+      ? [...new Set(arr.filter((x: unknown) => typeof x === 'string' && (x as string).trim()).map((x: unknown) => (x as string).trim()))]
       : [];
 
   if (data.employment_types !== undefined) {
-    normalized.employment_types = normalizeStringArray(data.employment_types as any);
+    normalized.employment_types = normalizeStringArray(data.employment_types as unknown);
   }
   if (data.languages !== undefined) {
-    normalized.languages = normalizeStringArray(data.languages as any);
+    normalized.languages = normalizeStringArray(data.languages as unknown);
   }
   if (data.frameworks !== undefined) {
-    normalized.frameworks = normalizeStringArray(data.frameworks as any);
+    normalized.frameworks = normalizeStringArray(data.frameworks as unknown);
   }
 
   // Simple strings
-  const trimOrNull = (v: any) => (typeof v === 'string' && v.trim() ? v.trim() : null);
+  const trimOrNull = (v: unknown) => (typeof v === 'string' && v.trim() ? v.trim() : null);
   if (data.location !== undefined) normalized.location = trimOrNull(data.location);
   if (data.school !== undefined) normalized.school = trimOrNull(data.school);
   if (data.degree_level !== undefined) normalized.degree_level = trimOrNull(data.degree_level);
@@ -355,7 +358,7 @@ export function normalizeCandidateData(
   }
 
   // Booleans
-  const toBoolOrNull = (v: any) => (typeof v === 'boolean' ? v : v == null ? null : ['true','1','yes','on'].includes(String(v).toLowerCase()) ? true : ['false','0','no','off'].includes(String(v).toLowerCase()) ? false : null);
+  const toBoolOrNull = (v: unknown) => (typeof v === 'boolean' ? v : v == null ? null : ['true','1','yes','on'].includes(String(v).toLowerCase()) ? true : ['false','0','no','off'].includes(String(v).toLowerCase()) ? false : null);
   if (data.requires_sponsorship !== undefined) normalized.requires_sponsorship = toBoolOrNull(data.requires_sponsorship);
   if (data.open_to_relocation !== undefined) normalized.open_to_relocation = toBoolOrNull(data.open_to_relocation);
   if (data.eeo_prefer_not_to_say !== undefined) normalized.eeo_prefer_not_to_say = toBoolOrNull(data.eeo_prefer_not_to_say);
@@ -367,9 +370,9 @@ export function normalizeCandidateData(
   if (data.eeo_disability_status !== undefined) normalized.eeo_disability_status = trimOrNull(data.eeo_disability_status);
   
   // Preserve user_id if present (no normalization needed)
-  if (data && typeof data === 'object' && 'user_id' in (data as any)) {
-    normalized.user_id = (data as any).user_id;
+  if (data && typeof data === 'object' && 'user_id' in (data as Record<string, unknown>)) {
+    normalized.user_id = (data as Record<string, unknown>).user_id as string;
   }
   
-  return normalized;
+  return { ...(data as Record<string, unknown>), ...normalized } as T;
 }

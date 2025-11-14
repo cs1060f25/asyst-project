@@ -31,8 +31,8 @@ export async function GET(req: NextRequest) {
 
     const profile = await fetchCandidateProfile(userId);
     return NextResponse.json(profile);
-  } catch (e: any) {
-    return NextResponse.json({ error: e?.message || "INTERNAL_ERROR" }, { status: 500 });
+  } catch (e: unknown) {
+    return NextResponse.json({ error: e instanceof Error ? e.message : "INTERNAL_ERROR" }, { status: 500 });
   }
 }
 
@@ -57,7 +57,7 @@ export async function PUT(req: NextRequest) {
       }
       return NextResponse.json(result.data);
     }
-  } catch (e: any) {
-    return NextResponse.json({ error: e?.message || "BAD_REQUEST" }, { status: 400 });
+  } catch (e: unknown) {
+    return NextResponse.json({ error: e instanceof Error ? e.message : "BAD_REQUEST" }, { status: 400 });
   }
 }

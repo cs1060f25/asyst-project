@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import Link from "next/link";
 import { z } from "zod";
 import { supabase } from "@/lib/supabaseClient";
@@ -13,7 +13,7 @@ const schema = z.object({
   password: z.string().min(6, "Password must be at least 6 characters"),
 });
 
-export default function SignInPage() {
+function SignInInner() {
   const router = useRouter();
   const search = useSearchParams();
   const [email, setEmail] = useState("");
@@ -30,6 +30,7 @@ export default function SignInPage() {
       setError(parsed.error.issues[0]?.message || "Invalid input");
       return;
     }
+
     setLoading(true);
     try {
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
@@ -138,5 +139,13 @@ export default function SignInPage() {
         Don't have an account? <Link className="underline" href="/auth/role-selection">Get started</Link>
       </p>
     </div>
+  );
+}
+
+export default function SignInPage() {
+  return (
+    <Suspense fallback={<div className="max-w-sm w-full space-y-6"><h1 className="text-2xl font-semibold tracking-tight">Sign in</h1></div>}>
+      <SignInInner />
+    </Suspense>
   );
 }

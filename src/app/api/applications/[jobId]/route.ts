@@ -1,13 +1,13 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
 type ApplicationStatus = "Applied" | "Under Review" | "Interview" | "Offer" | "Hired" | "Rejected";
 
 export const runtime = "nodejs";
 
-export async function PATCH(req: NextRequest, { params }: { params: { jobId: string } }) {
+export async function PATCH(req: Request, context: unknown) {
   try {
-    const { jobId } = params;
+    const { jobId } = (context as { params: { jobId: string } }).params;
     const body = await req.json();
     const status = body?.status as ApplicationStatus;
     

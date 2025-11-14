@@ -24,10 +24,10 @@ export async function GET() {
     }
     
     return NextResponse.json(data || []);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Unexpected error:', error);
     return NextResponse.json(
-      { error: "Internal server error", details: error.message },
+      { error: "Internal server error", details: error instanceof Error ? error.message : String(error) },
       { status: 500 }
     );
   }
@@ -73,10 +73,10 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json(newJob, { status: 201 });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Failed to create job:", error);
     return NextResponse.json(
-      { error: "Failed to create job", details: error.message },
+      { error: "Failed to create job", details: error instanceof Error ? error.message : String(error) },
       { status: 500 }
     );
   }

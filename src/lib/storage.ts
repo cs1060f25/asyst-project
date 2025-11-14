@@ -57,7 +57,7 @@ export async function readProfile(): Promise<Profile> {
       resume: profile.resume || null,
       offerDeadline: profile.offerDeadline || null,
     };
-  } catch (e: any) {
+  } catch {
     return { name: "", email: "", education: "", resume: null, offerDeadline: null };
   }
 }
@@ -116,7 +116,7 @@ export async function deleteResumeFileIfExists(info: ResumeInfo | null) {
   if (!info) return;
   try {
     await fs.unlink(info.path);
-  } catch (_) {
+  } catch {
     // ignore if already deleted
   }
 }

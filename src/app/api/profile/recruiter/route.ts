@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
     }
 
     return NextResponse.json(profile);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error fetching recruiter profile:", error);
     return NextResponse.json(
       { error: "Failed to fetch profile" },
@@ -95,11 +95,10 @@ export async function POST(req: NextRequest) {
     const newProfile = await createRecruiterProfile(profileData);
 
     return NextResponse.json(newProfile, { status: 201 });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error creating recruiter profile:", error);
-    console.error("Full error details:", JSON.stringify(error, null, 2));
     return NextResponse.json(
-      { error: "Failed to create profile", details: error.message },
+      { error: "Failed to create profile", details: error instanceof Error ? error.message : String(error) },
       { status: 500 }
     );
   }
@@ -130,7 +129,7 @@ export async function PATCH(req: NextRequest) {
     const updatedProfile = await updateRecruiterProfile(user_id, updates);
 
     return NextResponse.json(updatedProfile);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error updating recruiter profile:", error);
     return NextResponse.json(
       { error: "Failed to update profile" },

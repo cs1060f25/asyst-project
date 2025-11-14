@@ -87,7 +87,7 @@ export async function GET() {
     }));
     
     return NextResponse.json(transformed);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Unexpected error:', error);
     return NextResponse.json([]);
   }
@@ -255,7 +255,7 @@ export async function POST(req: NextRequest) {
       { status: 201 }
     );
     
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Unexpected error in POST /api/applications:', error);
     
     // Handle JSON parse errors
@@ -267,7 +267,7 @@ export async function POST(req: NextRequest) {
     }
     
     return NextResponse.json(
-      { error: "Internal server error", details: error.message },
+      { error: "Internal server error", details: error instanceof Error ? error.message : String(error) },
       { status: 500 }
     );
   }

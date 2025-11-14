@@ -26,7 +26,7 @@ export interface Job {
   description: string | null;
   location: string | null;
   salary_range: string | null;
-  requirements: Record<string, any> | null;  // JSONB
+  requirements: Record<string, unknown> | null;  // JSONB
   status: JobStatus;
   deadline: string | null;     // ISO timestamp
   created_at: string;          // ISO timestamp
@@ -41,7 +41,7 @@ export interface JobInsert {
   description?: string | null;
   location?: string | null;
   salary_range?: string | null;
-  requirements?: Record<string, any> | null;
+  requirements?: Record<string, unknown> | null;
   status?: JobStatus;
   deadline?: string | null;
 }
@@ -54,7 +54,7 @@ export interface JobUpdate {
   description?: string | null;
   location?: string | null;
   salary_range?: string | null;
-  requirements?: Record<string, any> | null;
+  requirements?: Record<string, unknown> | null;
   status?: JobStatus;
   deadline?: string | null;
 }
@@ -69,7 +69,7 @@ export interface Application {
   status: ApplicationStatus;
   resume_url: string | null;
   cover_letter: string | null;
-  supplemental_answers: Record<string, any> | null;  // JSONB
+  supplemental_answers: Record<string, unknown> | null;  // JSONB
   applied_at: string;            // ISO timestamp
   updated_at: string;            // ISO timestamp
 }
@@ -81,7 +81,7 @@ export interface ApplicationInsert {
   status?: ApplicationStatus;
   resume_url?: string | null;
   cover_letter?: string | null;
-  supplemental_answers?: Record<string, any> | null;
+  supplemental_answers?: Record<string, unknown> | null;
 }
 
 // Type for updating an application (all fields optional)
@@ -89,7 +89,7 @@ export interface ApplicationUpdate {
   status?: ApplicationStatus;
   resume_url?: string | null;
   cover_letter?: string | null;
-  supplemental_answers?: Record<string, any> | null;
+  supplemental_answers?: Record<string, unknown> | null;
 }
 
 // =============================================

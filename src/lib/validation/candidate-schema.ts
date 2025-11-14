@@ -19,7 +19,7 @@ const WorkExperienceSchema = z.object({
   title: z.string().min(1, 'Job title is required').max(100, 'Job title too long'),
   start_date: z.string().regex(/^\d{4}-\d{2}$/, 'Start date must be in YYYY-MM format'),
   end_date: z.string().regex(/^\d{4}-\d{2}$/, 'End date must be in YYYY-MM format').nullable(),
-  description: z.string().max(1000, 'Description too long').optional()
+  description: z.string().max(1000, 'Description too long').default('')
 });
 
 // Certification validation schema

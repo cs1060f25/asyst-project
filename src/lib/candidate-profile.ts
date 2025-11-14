@@ -46,10 +46,63 @@ export async function saveCandidateProfile(
   });
   
   // Step 2: Normalize the validated data
-  const normalizedData = normalizeCandidateData(validatedData) as CandidateProfileInsert;
+  const normalizedData = normalizeCandidateData(validatedData);
+  const forInsert: CandidateProfileInsert = {
+    user_id: userId,
+    name: normalizedData.name,
+    email: normalizedData.email,
+    phone: normalizedData.phone ?? null,
+    education: normalizedData.education ?? null,
+    resume_url: normalizedData.resume_url ?? null,
+    skills: normalizedData.skills ?? [],
+    experience: (normalizedData.experience ?? []).map(e => ({
+      company: e.company,
+      title: e.title,
+      start_date: e.start_date,
+      end_date: e.end_date ?? null,
+      description: e.description ?? "",
+    })),
+    certifications: (normalizedData.certifications ?? []).map(c => ({
+      name: c.name,
+      issuer: c.issuer,
+      date: c.date,
+      expiry: c.expiry ?? null,
+    })),
+    linkedin_url: normalizedData.linkedin_url ?? null,
+    github_url: normalizedData.github_url ?? null,
+    portfolio_url: normalizedData.portfolio_url ?? null,
+    offer_deadline: normalizedData.offer_deadline ?? null,
+    eeo_gender: normalizedData.eeo_gender ?? null,
+    eeo_race_ethnicity: normalizedData.eeo_race_ethnicity ?? null,
+    eeo_veteran_status: normalizedData.eeo_veteran_status ?? null,
+    eeo_disability_status: normalizedData.eeo_disability_status ?? null,
+    eeo_prefer_not_to_say: normalizedData.eeo_prefer_not_to_say ?? null,
+    location: normalizedData.location ?? null,
+    school: normalizedData.school ?? null,
+    degree_level: normalizedData.degree_level ?? null,
+    graduation_date: normalizedData.graduation_date ?? null,
+    gpa: normalizedData.gpa ?? null,
+    years_experience: normalizedData.years_experience ?? null,
+    work_authorization: normalizedData.work_authorization ?? null,
+    requires_sponsorship: normalizedData.requires_sponsorship ?? null,
+    open_to_relocation: normalizedData.open_to_relocation ?? null,
+    employment_types: normalizedData.employment_types ?? [],
+    pronouns: normalizedData.pronouns ?? null,
+    languages: normalizedData.languages ?? [],
+    frameworks: normalizedData.frameworks ?? [],
+    timezone: normalizedData.timezone ?? null,
+    website_url: normalizedData.website_url ?? null,
+    twitter_url: normalizedData.twitter_url ?? null,
+    mastodon_url: normalizedData.mastodon_url ?? null,
+    dribbble_url: normalizedData.dribbble_url ?? null,
+    leetcode_url: normalizedData.leetcode_url ?? null,
+    codeforces_url: normalizedData.codeforces_url ?? null,
+    hackerrank_url: normalizedData.hackerrank_url ?? null,
+    referral_source: normalizedData.referral_source ?? null,
+  };
   
   // Step 3: Store in database
-  return await createCandidateProfile(normalizedData);
+  return await createCandidateProfile(forInsert);
 }
 
 /**
@@ -105,15 +158,67 @@ export async function safeSaveCandidateProfile(
     if (!validationResult.success) {
       return {
         success: false,
-        error: `Validation failed: ${validationResult.error?.errors.map(e => e.message).join(', ')}`
+        error: `Validation failed: ${validationResult.error?.issues.map(i => i.message).join(', ')}`
       };
     }
     
     // Step 2: Normalize the validated data
-    const normalizedData = normalizeCandidateData(validationResult.data!) as CandidateProfileInsert;
-    
-    // Step 3: Store in database
-    const profile = await createCandidateProfile(normalizedData);
+    const normalizedData = normalizeCandidateData(validationResult.data!);
+    const forInsert: CandidateProfileInsert = {
+      user_id: userId,
+      name: normalizedData.name,
+      email: normalizedData.email,
+      phone: normalizedData.phone ?? null,
+      education: normalizedData.education ?? null,
+      resume_url: normalizedData.resume_url ?? null,
+      skills: normalizedData.skills ?? [],
+      experience: (normalizedData.experience ?? []).map(e => ({
+        company: e.company,
+        title: e.title,
+        start_date: e.start_date,
+        end_date: e.end_date ?? null,
+        description: e.description ?? "",
+      })),
+      certifications: (normalizedData.certifications ?? []).map(c => ({
+        name: c.name,
+        issuer: c.issuer,
+        date: c.date,
+        expiry: c.expiry ?? null,
+      })),
+      linkedin_url: normalizedData.linkedin_url ?? null,
+      github_url: normalizedData.github_url ?? null,
+      portfolio_url: normalizedData.portfolio_url ?? null,
+      offer_deadline: normalizedData.offer_deadline ?? null,
+      eeo_gender: normalizedData.eeo_gender ?? null,
+      eeo_race_ethnicity: normalizedData.eeo_race_ethnicity ?? null,
+      eeo_veteran_status: normalizedData.eeo_veteran_status ?? null,
+      eeo_disability_status: normalizedData.eeo_disability_status ?? null,
+      eeo_prefer_not_to_say: normalizedData.eeo_prefer_not_to_say ?? null,
+      location: normalizedData.location ?? null,
+      school: normalizedData.school ?? null,
+      degree_level: normalizedData.degree_level ?? null,
+      graduation_date: normalizedData.graduation_date ?? null,
+      gpa: normalizedData.gpa ?? null,
+      years_experience: normalizedData.years_experience ?? null,
+      work_authorization: normalizedData.work_authorization ?? null,
+      requires_sponsorship: normalizedData.requires_sponsorship ?? null,
+      open_to_relocation: normalizedData.open_to_relocation ?? null,
+      employment_types: normalizedData.employment_types ?? [],
+      pronouns: normalizedData.pronouns ?? null,
+      languages: normalizedData.languages ?? [],
+      frameworks: normalizedData.frameworks ?? [],
+      timezone: normalizedData.timezone ?? null,
+      website_url: normalizedData.website_url ?? null,
+      twitter_url: normalizedData.twitter_url ?? null,
+      mastodon_url: normalizedData.mastodon_url ?? null,
+      dribbble_url: normalizedData.dribbble_url ?? null,
+      leetcode_url: normalizedData.leetcode_url ?? null,
+      codeforces_url: normalizedData.codeforces_url ?? null,
+      hackerrank_url: normalizedData.hackerrank_url ?? null,
+      referral_source: normalizedData.referral_source ?? null,
+    };
+
+    const profile = await createCandidateProfile(forInsert);
     
     return {
       success: true,
@@ -148,7 +253,7 @@ export async function safeUpdateCandidateProfile(
     if (!validationResult.success) {
       return {
         success: false,
-        error: `Validation failed: ${validationResult.error?.errors.map(e => e.message).join(', ')}`
+        error: `Validation failed: ${validationResult.error?.issues.map(i => i.message).join(', ')}`
       };
     }
     

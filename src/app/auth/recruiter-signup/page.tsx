@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import Link from "next/link";
 import { z } from "zod";
 import { supabase } from "@/lib/supabaseClient";
@@ -23,7 +23,7 @@ const schema = z.object({
   message: "Passwords do not match",
 });
 
-export default function RecruiterSignUpPage() {
+function RecruiterSignUpInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   
@@ -55,6 +55,8 @@ export default function RecruiterSignUpPage() {
       setError(parsed.error.issues[0]?.message || "Invalid input");
       return;
     }
+
+ 
     
     setLoading(true);
     
@@ -266,5 +268,13 @@ export default function RecruiterSignUpPage() {
         </Link>
       </p>
     </div>
+  );
+}
+
+export default function RecruiterSignUpPage() {
+  return (
+    <Suspense fallback={<div className="max-w-md w-full space-y-6"><h1 className="text-2xl font-semibold tracking-tight">Create Recruiter Account</h1></div>}>
+      <RecruiterSignUpInner />
+    </Suspense>
   );
 }

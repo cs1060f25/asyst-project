@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Users, Briefcase } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 
-export default function RoleSelectionPage() {
+function RoleSelectionInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirect = searchParams.get("redirect");
@@ -209,5 +209,13 @@ export default function RoleSelectionPage() {
         </a>
       </div>
     </div>
+  );
+}
+
+export default function RoleSelectionPage() {
+  return (
+    <Suspense fallback={<div className="max-w-4xl w-full space-y-8"><div className="text-center space-y-2"><h1 className="text-3xl font-bold tracking-tight">Join Asyst</h1></div></div>}>
+      <RoleSelectionInner />
+    </Suspense>
   );
 }

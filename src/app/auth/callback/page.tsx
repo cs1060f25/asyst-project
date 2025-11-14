@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 
-export default function AuthCallbackPage() {
+function AuthCallbackInner() {
   const router = useRouter();
   const search = useSearchParams();
   const [error, setError] = useState<string | null>(null);
@@ -71,5 +71,13 @@ export default function AuthCallbackPage() {
       {error && <p className="text-sm text-red-600">{error}</p>}
       {!error && <p className="text-sm text-muted-foreground">Please wait while we finalize your sign-in.</p>}
     </div>
+  );
+}
+
+export default function AuthCallbackPage() {
+  return (
+    <Suspense fallback={<div className="max-w-sm w-full space-y-4"><h1 className="text-2xl font-semibold tracking-tight">Signing you in…</h1><p className="text-sm text-muted-foreground">Please wait while we finalize your sign-in.</p></div>}>
+      <AuthCallbackInner />
+    </Suspense>
   );
 }

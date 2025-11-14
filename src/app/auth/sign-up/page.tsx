@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import Link from "next/link";
 import { z } from "zod";
 import { supabase } from "@/lib/supabaseClient";
@@ -18,7 +18,7 @@ const schema = z.object({
   message: "Passwords do not match",
 });
 
-export default function SignUpPage() {
+function SignUpInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
@@ -36,6 +36,7 @@ export default function SignUpPage() {
       setError(parsed.error.issues[0]?.message || "Invalid input");
       return;
     }
+
     setLoading(true);
     try {
       // 1. Sign up the user with Supabase Auth
@@ -169,5 +170,13 @@ export default function SignUpPage() {
         Already have an account? <Link className="underline" href="/auth/sign-in">Sign in</Link>
       </p>
     </div>
+  );
+}
+
+export default function SignUpPage() {
+  return (
+    <Suspense fallback={<div className="max-w-sm w-full space-y-6"><h1 className="text-2xl font-semibold tracking-tight">Create account</h1></div>}>
+      <SignUpInner />
+    </Suspense>
   );
 }

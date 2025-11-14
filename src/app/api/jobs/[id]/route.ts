@@ -1,13 +1,13 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
 
 // GET /api/jobs/[id] - Fetch a specific job by ID
-export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(_req: Request, context: unknown) {
   try {
     const supabase = await createClient();
-    const jobId = params.id;
+    const jobId = (context as { params: { id: string } }).params.id;
     
     // Fetch job by ID
     const { data, error } = await supabase

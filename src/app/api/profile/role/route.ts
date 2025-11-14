@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
     }
 
     return NextResponse.json({ role, user_id: user.id });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error fetching user role:", error);
     return NextResponse.json(
       { error: "Failed to fetch user role" },
