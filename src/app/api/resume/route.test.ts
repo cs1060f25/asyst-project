@@ -35,11 +35,13 @@ vi.mock("@/lib/supabase/server", () => {
     getPublicUrl: vi.fn((path: string) => ({ data: { publicUrl: `https://example.com/object/public/resumes/${path}` } })),
   };
 
-  // Chain for DB update
+  // Chain for DB update with .eq().select()
   const updateChain = {
-    eq: vi.fn(async () => ({
-      error: globalThis.__dbUpdateShouldFail ? { message: globalThis.__dbUpdateShouldFail } : null,
-      data: globalThis.__dbUpdateAffectsZero ? [] : [{}],
+    eq: vi.fn(() => ({
+      select: vi.fn(async () => ({
+        error: globalThis.__dbUpdateShouldFail ? { message: globalThis.__dbUpdateShouldFail } : null,
+        data: globalThis.__dbUpdateAffectsZero ? [] : [{}],
+      })),
     })),
   };
   const fromChain = {
