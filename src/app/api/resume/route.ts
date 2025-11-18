@@ -33,27 +33,37 @@ export async function POST(req: NextRequest) {
     }
 
     // Upload to Supabase Storage (bucket: "resumes")
-    const arrayBuffer = await file.arrayBuffer();
     const path = `${userId}/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
-    const { error: uploadError } = await supabase.storage.from("resumes").upload(path, arrayBuffer, {
+    const { error: uploadError } = await supabase.storage.from("resumes").upload(path, file as unknown as Blob, {
       contentType: file.type,
       upsert: true,
     });
     if (uploadError) {
-      return NextResponse.json({ error: "UPLOAD_FAILED" }, { status: 500 });
+      return NextResponse.json({ error: "UPLOAD_FAILED", message: (uploadError as any).message ?? String(uploadError) }, { status: 500 });
     }
 
     // Get public URL
     const { data: publicData } = await supabase.storage.from("resumes").getPublicUrl(path);
     const publicUrl = publicData.publicUrl;
 
-    // Update candidate profile resume_url
-    const { error: updateError } = await supabase
+    // Update candidate profile with resume metadata and legacy url
+    const { data: updatedRows, error: updateError } = await supabase
       .from('candidate_profiles')
-      .update({ resume_url: publicUrl })
-      .eq('user_id', userId);
+      .update({
+        resume_url: publicUrl,
+        resume_path: path,
+        resume_original_name: file.name,
+        resume_mime: file.type,
+        resume_size: file.size,
+        resume_updated_at: new Date().toISOString(),
+      })
+      .eq('user_id', userId)
+      .select('user_id');
     if (updateError) {
       return NextResponse.json({ error: updateError.message }, { status: 400 });
+    }
+    if (!updatedRows || updatedRows.length === 0) {
+      return NextResponse.json({ error: 'PROFILE_NOT_FOUND' }, { status: 404 });
     }
 
     // Return legacy profile-shaped response
@@ -99,10 +109,17 @@ export async function DELETE() {
       await supabase.storage.from('resumes').remove([path]);
     }
 
-    // Update DB
+    // Update DB - clear metadata and legacy url
     const { error: updateError } = await supabase
       .from('candidate_profiles')
-      .update({ resume_url: null })
+      .update({
+        resume_url: null,
+        resume_path: null,
+        resume_original_name: null,
+        resume_mime: null,
+        resume_size: null,
+        resume_updated_at: null,
+      })
       .eq('user_id', userId);
     if (updateError) return NextResponse.json({ error: updateError.message }, { status: 400 });
 

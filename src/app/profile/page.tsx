@@ -101,7 +101,24 @@ export default function ProfilePage() {
         const res = await fetch("/api/profile", { cache: "no-store" });
         const data = (await res.json()) as Profile;
         if (mounted) {
-          setProfile(data);
+          // If API doesn't provide a name/email yet, derive from Supabase Auth full_name as a fallback
+          try {
+            const { data: sessionData } = await supabase.auth.getSession();
+            const user = sessionData.session?.user as any;
+            const meta = (user?.user_metadata ?? {}) as any;
+            const metaFull = typeof meta.full_name === 'string' ? meta.full_name.trim() : '';
+            const derivedName = metaFull || "";
+            const derivedEmail = typeof user?.email === 'string' ? user.email : '';
+            setProfile({
+              name: data.name && data.name.trim() ? data.name : derivedName,
+              email: data.email && data.email.trim() ? data.email : derivedEmail,
+              education: data.education,
+              resume: data.resume,
+              offerDeadline: data.offerDeadline,
+            });
+          } catch {
+            setProfile(data);
+          }
         }
       } catch (e) {
         // ignore

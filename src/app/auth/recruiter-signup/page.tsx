@@ -62,11 +62,19 @@ function RecruiterSignUpInner() {
     
     try {
       // 1. Sign up the user with Supabase Auth
+      const trimmedName = name.trim();
+      const [first_name, ...rest] = trimmedName.split(/\s+/);
+      const last_name = rest.join(" ");
       const { data: authData, error: authError } = await supabase.auth.signUp({ 
         email, 
         password,
         options: {
           emailRedirectTo: window.location.origin + '/recruiter',
+          data: {
+            full_name: trimmedName,
+            first_name: first_name || trimmedName,
+            last_name: last_name || "",
+          },
         }
       });
       
