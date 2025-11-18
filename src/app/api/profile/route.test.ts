@@ -64,6 +64,7 @@ describe("GET /api/profile name derivation", () => {
               user_name: "johnny",
               first_name: "John",
               last_name: "Smith",
+              full_name: "John Smith",
             },
           },
         },
