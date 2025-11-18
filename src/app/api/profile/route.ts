@@ -21,9 +21,14 @@ export async function GET() {
       .eq('user_id', userId)
       .maybeSingle();
 
+    const metaFull = sessionData.session.user.user_metadata?.full_name as string | undefined;
+    const computedName = (typeof metaFull === 'string' && metaFull.trim())
+      ? metaFull.trim()
+      : ((data && data.name) || "");
+
     // Map to legacy Profile shape expected by UI
     const legacy = {
-      name: (data && data.name) || "",
+      name: computedName,
       email: (data && data.email) || "",
       education: (data && data.education) || "",
       resume: data && data.resume_url ? {
@@ -81,6 +86,11 @@ export async function PUT(req: NextRequest) {
     }
 
     const userId = sessionData.session.user.id;
+
+    // Keep Supabase Auth display name in sync with profile name
+    try {
+      await supabase.auth.updateUser({ data: { full_name: name } });
+    } catch {}
 
     // Upsert candidate profile basic fields
     const { data: existing } = await supabase

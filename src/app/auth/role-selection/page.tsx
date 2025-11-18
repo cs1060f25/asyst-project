@@ -66,6 +66,11 @@ function RoleSelectionInner() {
 
       // Authenticated: create profile and redirect, no re-signup
       if (role === "candidate") {
+        const meta: any = (user as any)?.user_metadata || {};
+        const first = typeof meta.first_name === 'string' ? meta.first_name.trim() : '';
+        const last = typeof meta.last_name === 'string' ? meta.last_name.trim() : '';
+        const full = typeof meta.full_name === 'string' ? meta.full_name.trim() : '';
+        const displayName = (first && last) ? `${first} ${last}` : (full || (user.email?.split("@")[0] || ""));
         const { data: existing } = await supabase
           .from("candidate_profiles")
           .select("id")
@@ -74,12 +79,17 @@ function RoleSelectionInner() {
         if (!existing) {
           const { error: insertError } = await supabase
             .from("candidate_profiles")
-            .insert({ user_id: user.id, name: user.email?.split("@")[0] || "", email: user.email ?? null })
+            .insert({ user_id: user.id, name: displayName, email: user.email ?? null })
             .single();
           if (insertError) throw insertError;
         }
         router.replace(redirect && redirect.startsWith("/") ? redirect : "/candidate");
       } else {
+        const meta: any = (user as any)?.user_metadata || {};
+        const first = typeof meta.first_name === 'string' ? meta.first_name.trim() : '';
+        const last = typeof meta.last_name === 'string' ? meta.last_name.trim() : '';
+        const full = typeof meta.full_name === 'string' ? meta.full_name.trim() : '';
+        const displayName = (first && last) ? `${first} ${last}` : (full || (user.email?.split("@")[0] || ""));
         const { data: existing } = await supabase
           .from("recruiter_profiles")
           .select("id")
@@ -88,7 +98,7 @@ function RoleSelectionInner() {
         if (!existing) {
           const { error: insertError } = await supabase
             .from("recruiter_profiles")
-            .insert({ user_id: user.id, name: user.email?.split("@")[0] || "", email: user.email ?? null, company: null, title: null })
+            .insert({ user_id: user.id, name: displayName, email: user.email ?? null, company: null, title: null })
             .single();
           if (insertError) throw insertError;
         }
