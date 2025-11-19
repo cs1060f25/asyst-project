@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Modal } from "@/components/ui/modal";
+import { supabase } from "@/lib/supabaseClient";
 
 import { Job } from "@/lib/applications";
 
@@ -26,6 +27,27 @@ export default function CandidatePage() {
   const [suppModalOpen, setSuppModalOpen] = useState(false);
   const [pendingJobForSupp, setPendingJobForSupp] = useState<string | null>(null);
 
+  // Monitor authentication state and clear data on sign-out
+  useEffect(() => {
+    const { data: authSubscription } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_OUT' || !session) {
+        // User signed out - clear sensitive data and redirect
+        setJobs([]);
+        setApps([]);
+        setLoading(false);
+        router.push('/auth/sign-in?redirect=/candidate');
+      } else if (event === 'SIGNED_IN' && session) {
+        // User signed in - reload data
+        setLoading(true);
+      }
+    });
+
+    return () => {
+      authSubscription.subscription.unsubscribe();
+    };
+  }, [router]);
+
+  // Load jobs and applications data
   useEffect(() => {
     let mounted = true;
     (async () => {
