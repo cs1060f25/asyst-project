@@ -7,7 +7,8 @@ export const runtime = "nodejs";
 export async function GET(_req: Request, context: unknown) {
   try {
     const supabase = await createClient();
-    const jobId = (context as { params: { id: string } }).params.id;
+    const params = await (context as { params: Promise<{ id: string }> }).params;
+    const jobId = params.id;
     
     // Fetch job by ID
     const { data, error } = await supabase
