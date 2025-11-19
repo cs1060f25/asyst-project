@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus } from "lucide-react";
+import { supabase } from "@/lib/supabaseClient";
 
 type Job = {
   id: string;
@@ -44,6 +45,27 @@ export default function RecruiterPage() {
     setIsMounted(true);
   }, []);
 
+  // Monitor authentication state and clear data on sign-out
+  useEffect(() => {
+    const { data: authSubscription } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_OUT' || !session) {
+        // User signed out - clear sensitive data and redirect
+        setApplications([]);
+        setJobs([]);
+        setLoading(false);
+        router.push('/auth/sign-in?redirect=/recruiter');
+      } else if (event === 'SIGNED_IN' && session) {
+        // User signed in - reload data
+        setLoading(true);
+      }
+    });
+
+    return () => {
+      authSubscription.subscription.unsubscribe();
+    };
+  }, [router]);
+
+  // Load applications and jobs data
   useEffect(() => {
     let mounted = true;
     (async () => {
