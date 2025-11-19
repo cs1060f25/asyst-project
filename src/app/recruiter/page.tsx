@@ -15,6 +15,7 @@ type Job = {
 };
 
 type Application = {
+  id: string;
   jobId: string;
   status: "Applied" | "Under Review" | "Interview" | "Offer" | "Hired" | "Rejected";
   appliedAt: string;
@@ -139,10 +140,10 @@ export default function RecruiterPage() {
     });
   }, [applications, searchQuery, statusFilter, isMounted]);
 
-  const updateStatus = async (jobId: string, newStatus: Application["status"]) => {
-    setUpdating(jobId);
+  const updateStatus = async (applicationId: string, newStatus: Application["status"]) => {
+    setUpdating(applicationId);
     try {
-      const response = await fetch(`/api/applications/${jobId}`, {
+      const response = await fetch(`/api/applications/${applicationId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: newStatus }),
@@ -151,11 +152,12 @@ export default function RecruiterPage() {
       if (response.ok) {
         setApplications(prev => 
           prev.map(app => 
-            app.jobId === jobId ? { ...app, status: newStatus } : app
+            app.id === applicationId ? { ...app, status: newStatus } : app
           )
         );
       } else {
-        console.error("Failed to update status");
+        const errorData = await response.text();
+        console.error("Failed to update status:", response.status, errorData);
       }
     } catch (error) {
       console.error("Error updating status:", error);
@@ -244,7 +246,7 @@ export default function RecruiterPage() {
             filteredApplications.map((app) => {
               const urgency = isMounted ? getDeadlineUrgency(app.candidateInfo?.offerDeadline || null) : null;
               return (
-                <div key={app.jobId} className="px-6 py-4 hover:bg-gray-50">
+                <div key={`${app.jobId}-${app.candidateInfo?.email || 'anonymous'}-${app.appliedAt}`} className="px-6 py-4 hover:bg-gray-50">
                   <div className="grid grid-cols-12 gap-4 items-center">
                     <div className="col-span-2">
                       <div className="font-medium">{app.candidateInfo?.name || "Anonymous"}</div>
@@ -284,8 +286,8 @@ export default function RecruiterPage() {
                     <div className="col-span-2">
                       <Select
                         value={app.status}
-                        onValueChange={(value) => updateStatus(app.jobId, value as Application["status"])}
-                        disabled={updating === app.jobId}
+                        onValueChange={(value) => updateStatus(app.id, value as Application["status"])}
+                        disabled={updating === app.id}
                       >
                         <SelectTrigger className="w-full">
                           <SelectValue />
