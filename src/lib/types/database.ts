@@ -135,16 +135,42 @@ export interface CandidateProfile {
   email: string;                 // Required, lowercase normalized
   phone: string | null;          // Optional, standardized format
   education: string | null;      // Optional
+  major: string | null;          // Optional
   resume_url: string | null;    // Optional, URL to resume file
   skills: string[];             // Array of skills (lowercase, deduplicated)
-  experience: WorkExperience[];  // Array of work experience objects
-  certifications: Certification[]; // Array of certification objects
+  experience: string[];          // Array of strings
+  certifications: string[];      // Array of strings
   linkedin_url: string | null;  // Optional, LinkedIn profile URL
   github_url: string | null;     // Optional, GitHub profile URL
   portfolio_url: string | null; // Optional, portfolio website URL
-  offer_deadline: string | null; // Optional, ISO timestamp
+  website_url: string | null;   // Optional, Website URL
+  twitter_url: string | null;   // Optional, Twitter URL
+  mastodon_url: string | null;  // Optional, Mastodon URL
+  dribbble_url: string | null;  // Optional, Dribbble URL
+  leetcode_url: string | null;  // Optional, LeetCode URL
+  codeforces_url: string | null; // Optional, Codeforces URL
+  hackerrank_url: string | null; // Optional, HackerRank URL
+  location: string | null;      // Optional
+  timezone: string | null;      // Optional
+  work_authorization: string | null; // Optional
+  requires_sponsorship: boolean | null; // Optional
+  open_to_relocation: boolean | null; // Optional
+  employment_types: string[];   // Optional list
+  pronouns: string | null;      // Optional
+  offer_deadline: string | null; // Optional, date (YYYY-MM-DD)
+  referral_source: string | null; // Optional
+  eeo_gender: string | null;    // Optional
+  eeo_race_ethnicity: string | null; // Optional
+  eeo_veteran_status: string | null; // Optional
+  eeo_disability_status: string | null; // Optional
   created_at: string;           // ISO timestamp
   updated_at: string;            // ISO timestamp
+  // Resume metadata stored in DB
+  resume_path: string | null;
+  resume_original_name: string | null;
+  resume_mime: string | null;
+  resume_size: string | number | null; // bigint in DB -> string in JS, but some SDKs coerce to number
+  resume_updated_at: string | null;
 }
 
 // Type for inserting a new candidate profile (omits auto-generated fields)
@@ -154,27 +180,34 @@ export interface CandidateProfileInsert {
   email: string;
   phone?: string | null;
   education?: string | null;
+  major?: string | null;
   resume_url?: string | null;
   skills?: string[];
-  experience?: WorkExperience[];
-  certifications?: Certification[];
+  experience?: string[];
+  certifications?: string[];
   linkedin_url?: string | null;
   github_url?: string | null;
   portfolio_url?: string | null;
+  website_url?: string | null;
+  twitter_url?: string | null;
+  mastodon_url?: string | null;
+  dribbble_url?: string | null;
+  leetcode_url?: string | null;
+  codeforces_url?: string | null;
+  hackerrank_url?: string | null;
   offer_deadline?: string | null;
   // Voluntary EEO disclosures
   eeo_gender?: string | null;
   eeo_race_ethnicity?: string | null;
   eeo_veteran_status?: string | null;
   eeo_disability_status?: string | null;
-  eeo_prefer_not_to_say?: boolean | null;
   // Common SWE profile fields
   location?: string | null;
   school?: string | null;
   degree_level?: string | null;
-  graduation_date?: string | null; // YYYY-MM
+  graduation_date?: string | null; // YYYY-MM-DD
   gpa?: number | null;
-  years_experience?: number | null;
+  years_of_experience?: number | null;
   work_authorization?: string | null;
   requires_sponsorship?: boolean | null;
   open_to_relocation?: boolean | null;
@@ -183,13 +216,6 @@ export interface CandidateProfileInsert {
   languages?: string[];
   frameworks?: string[];
   timezone?: string | null;
-  website_url?: string | null;
-  twitter_url?: string | null;
-  mastodon_url?: string | null;
-  dribbble_url?: string | null;
-  leetcode_url?: string | null;
-  codeforces_url?: string | null;
-  hackerrank_url?: string | null;
   referral_source?: string | null;
 }
 
@@ -199,6 +225,7 @@ export interface CandidateProfileUpdate {
   email?: string;
   phone?: string | null;
   education?: string | null;
+  major?: string | null;
   resume_url?: string | null;
   skills?: string[];
   experience?: WorkExperience[];
@@ -206,20 +233,26 @@ export interface CandidateProfileUpdate {
   linkedin_url?: string | null;
   github_url?: string | null;
   portfolio_url?: string | null;
+  website_url?: string | null;
+  twitter_url?: string | null;
+  mastodon_url?: string | null;
+  dribbble_url?: string | null;
+  leetcode_url?: string | null;
+  codeforces_url?: string | null;
+  hackerrank_url?: string | null;
   offer_deadline?: string | null;
   // Voluntary EEO disclosures
   eeo_gender?: string | null;
   eeo_race_ethnicity?: string | null;
   eeo_veteran_status?: string | null;
   eeo_disability_status?: string | null;
-  eeo_prefer_not_to_say?: boolean | null;
   // Common SWE profile fields
   location?: string | null;
   school?: string | null;
   degree_level?: string | null;
-  graduation_date?: string | null; // YYYY-MM
+  graduation_date?: string | null; // YYYY-MM-DD
   gpa?: number | null;
-  years_experience?: number | null;
+  years_of_experience?: number | null;
   work_authorization?: string | null;
   requires_sponsorship?: boolean | null;
   open_to_relocation?: boolean | null;
@@ -228,13 +261,6 @@ export interface CandidateProfileUpdate {
   languages?: string[];
   frameworks?: string[];
   timezone?: string | null;
-  website_url?: string | null;
-  twitter_url?: string | null;
-  mastodon_url?: string | null;
-  dribbble_url?: string | null;
-  leetcode_url?: string | null;
-  codeforces_url?: string | null;
-  hackerrank_url?: string | null;
   referral_source?: string | null;
 }
 

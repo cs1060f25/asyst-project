@@ -1,9 +1,7 @@
 import { z } from 'zod';
 import type { 
   CandidateProfileInsert, 
-  CandidateProfileUpdate,
-  WorkExperience,
-  Certification 
+  CandidateProfileUpdate
 } from '@/lib/types/database';
 
 /**
@@ -13,22 +11,8 @@ import type {
  * to ensure data quality before normalization and storage.
  */
 
-// Work experience validation schema
-const WorkExperienceSchema = z.object({
-  company: z.string().min(1, 'Company name is required').max(100, 'Company name too long'),
-  title: z.string().min(1, 'Job title is required').max(100, 'Job title too long'),
-  start_date: z.string().regex(/^\d{4}-\d{2}$/, 'Start date must be in YYYY-MM format'),
-  end_date: z.string().regex(/^\d{4}-\d{2}$/, 'End date must be in YYYY-MM format').nullable(),
-  description: z.string().max(1000, 'Description too long').default('')
-});
-
-// Certification validation schema
-const CertificationSchema = z.object({
-  name: z.string().min(1, 'Certification name is required').max(100, 'Certification name too long'),
-  issuer: z.string().min(1, 'Issuer is required').max(100, 'Issuer name too long'),
-  date: z.string().regex(/^\d{4}-\d{2}$/, 'Date must be in YYYY-MM format'),
-  expiry: z.string().regex(/^\d{4}-\d{2}$/, 'Expiry date must be in YYYY-MM format').nullable()
-});
+// Experience/Certification are simple string arrays in DB
+const StringArraySchema = z.array(z.string().max(1000)).max(200);
 
 // URL validation schema
 const UrlSchema = z.string().url('Invalid URL format').optional().or(z.literal(''));
@@ -56,27 +40,28 @@ export const CandidateProfileInsertSchema = z.object({
   email: EmailSchema,
   phone: PhoneSchema.nullable().optional(),
   education: z.string().max(200, 'Education description too long').nullable().optional(),
+  major: z.string().max(200).nullable().optional(),
   resume_url: UrlSchema.nullable().optional(),
   skills: SkillsSchema.optional(),
-  experience: z.array(WorkExperienceSchema).max(20, 'Too many work experiences (max 20)').optional(),
-  certifications: z.array(CertificationSchema).max(20, 'Too many certifications (max 20)').optional(),
+  experience: StringArraySchema.optional(),
+  certifications: StringArraySchema.optional(),
   linkedin_url: UrlSchema.nullable().optional(),
   github_url: UrlSchema.nullable().optional(),
   portfolio_url: UrlSchema.nullable().optional(),
-  offer_deadline: z.string().datetime('Invalid deadline format').nullable().optional(),
+  offer_deadline: z.string().regex(/^\d{4}-\d{2}-\d{2}$/,'Offer deadline must be in YYYY-MM-DD format').nullable().optional(),
   // Voluntary EEO disclosures
   eeo_gender: z.string().max(50).nullable().optional(),
   eeo_race_ethnicity: z.string().max(100).nullable().optional(),
   eeo_veteran_status: z.string().max(100).nullable().optional(),
   eeo_disability_status: z.string().max(100).nullable().optional(),
-  eeo_prefer_not_to_say: z.boolean().nullable().optional(),
+  // removed eeo_prefer_not_to_say (not in DB)
   // Common SWE profile fields
   location: z.string().max(200).nullable().optional(),
   school: z.string().max(200).nullable().optional(),
   degree_level: z.string().max(100).nullable().optional(),
-  graduation_date: z.string().regex(/^\d{4}-\d{2}$/,'Graduation date must be in YYYY-MM format').nullable().optional(),
+  graduation_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/,'Graduation date must be in YYYY-MM-DD format').nullable().optional(),
   gpa: z.number().min(0).max(4.0).nullable().optional(),
-  years_experience: z.number().int().min(0).max(60).nullable().optional(),
+  years_of_experience: z.number().int().min(0).max(60).nullable().optional(),
   work_authorization: z.string().max(100).nullable().optional(),
   requires_sponsorship: z.boolean().nullable().optional(),
   open_to_relocation: z.boolean().nullable().optional(),
@@ -101,27 +86,28 @@ export const CandidateProfileUpdateSchema = z.object({
   email: EmailSchema.optional(),
   phone: PhoneSchema.nullable().optional(),
   education: z.string().max(200, 'Education description too long').nullable().optional(),
+  major: z.string().max(200).nullable().optional(),
   resume_url: UrlSchema.nullable().optional(),
   skills: SkillsSchema.optional(),
-  experience: z.array(WorkExperienceSchema).max(20, 'Too many work experiences (max 20)').optional(),
-  certifications: z.array(CertificationSchema).max(20, 'Too many certifications (max 20)').optional(),
+  experience: StringArraySchema.optional(),
+  certifications: StringArraySchema.optional(),
   linkedin_url: UrlSchema.nullable().optional(),
   github_url: UrlSchema.nullable().optional(),
   portfolio_url: UrlSchema.nullable().optional(),
-  offer_deadline: z.string().datetime('Invalid deadline format').nullable().optional(),
+  offer_deadline: z.string().regex(/^\d{4}-\d{2}-\d{2}$/,'Offer deadline must be in YYYY-MM-DD format').nullable().optional(),
   // Voluntary EEO disclosures
   eeo_gender: z.string().max(50).nullable().optional(),
   eeo_race_ethnicity: z.string().max(100).nullable().optional(),
   eeo_veteran_status: z.string().max(100).nullable().optional(),
   eeo_disability_status: z.string().max(100).nullable().optional(),
-  eeo_prefer_not_to_say: z.boolean().nullable().optional(),
+  // removed eeo_prefer_not_to_say (not in DB)
   // Common SWE profile fields
   location: z.string().max(200).nullable().optional(),
   school: z.string().max(200).nullable().optional(),
   degree_level: z.string().max(100).nullable().optional(),
-  graduation_date: z.string().regex(/^\d{4}-\d{2}$/,'Graduation date must be in YYYY-MM format').nullable().optional(),
+  graduation_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/,'Graduation date must be in YYYY-MM-DD format').nullable().optional(),
   gpa: z.number().min(0).max(4.0).nullable().optional(),
-  years_experience: z.number().int().min(0).max(60).nullable().optional(),
+  years_of_experience: z.number().int().min(0).max(60).nullable().optional(),
   work_authorization: z.string().max(100).nullable().optional(),
   requires_sponsorship: z.boolean().nullable().optional(),
   open_to_relocation: z.boolean().nullable().optional(),

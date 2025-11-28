@@ -1,9 +1,7 @@
 import type { 
   CandidateProfile, 
   CandidateProfileInsert, 
-  CandidateProfileUpdate,
-  WorkExperience,
-  Certification 
+  CandidateProfileUpdate
 } from '@/lib/types/database';
 import type { CandidateProfileInsertValidated, CandidateProfileUpdateValidated } from '@/lib/validation/candidate-schema';
 
@@ -138,21 +136,9 @@ export function normalizeUrl(url: string): string {
  * @param experience - Raw experience array
  * @returns Normalized experience array
  */
-export function normalizeExperience(experience: WorkExperience[]): WorkExperience[] {
-  if (!Array.isArray(experience)) {
-    return [];
-  }
-  
-  return experience
-    .filter(exp => exp && typeof exp === 'object')
-    .map(exp => ({
-      company: exp.company?.trim() || '',
-      title: exp.title?.trim() || '',
-      start_date: normalizeDate(exp.start_date),
-      end_date: exp.end_date ? normalizeDate(exp.end_date) : null,
-      description: exp.description?.trim() || ''
-    }))
-    .filter(exp => exp.company && exp.title && exp.start_date);
+export function normalizeExperienceStrings(experience: string[]): string[] {
+  if (!Array.isArray(experience)) return [];
+  return [...new Set(experience.filter(x => typeof x === 'string').map(x => x.trim()).filter(Boolean))];
 }
 
 /**
@@ -160,20 +146,9 @@ export function normalizeExperience(experience: WorkExperience[]): WorkExperienc
  * @param certifications - Raw certifications array
  * @returns Normalized certifications array
  */
-export function normalizeCertifications(certifications: Certification[]): Certification[] {
-  if (!Array.isArray(certifications)) {
-    return [];
-  }
-  
-  return certifications
-    .filter(cert => cert && typeof cert === 'object')
-    .map(cert => ({
-      name: cert.name?.trim() || '',
-      issuer: cert.issuer?.trim() || '',
-      date: normalizeDate(cert.date),
-      expiry: cert.expiry ? normalizeDate(cert.expiry) : null
-    }))
-    .filter(cert => cert.name && cert.issuer && cert.date);
+export function normalizeCertificationStrings(certifications: string[]): string[] {
+  if (!Array.isArray(certifications)) return [];
+  return [...new Set(certifications.filter(x => typeof x === 'string').map(x => x.trim()).filter(Boolean))];
 }
 
 /**
@@ -181,7 +156,7 @@ export function normalizeCertifications(certifications: Certification[]): Certif
  * @param date - Raw date input
  * @returns Normalized date in YYYY-MM format or empty string if invalid
  */
-export function normalizeDate(date: string): string {
+export function normalizeDateYYYYMM(date: string): string {
   if (!date || typeof date !== 'string') {
     return '';
   }
@@ -192,15 +167,11 @@ export function normalizeDate(date: string): string {
   }
   
   try {
-    const dateObj = new Date(trimmed);
-    if (isNaN(dateObj.getTime())) {
-      return '';
-    }
-    
-    // Return YYYY-MM format
-    const year = dateObj.getFullYear();
-    const month = String(dateObj.getMonth() + 1).padStart(2, '0');
-    return `${year}-${month}`;
+    const d = new Date(trimmed);
+    if (isNaN(d.getTime())) return '';
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    return `${y}-${m}`;
   } catch {
     return '';
   }
@@ -222,12 +193,12 @@ export function normalizeOfferDeadline(deadline: string): string | null {
   }
   
   try {
-    const date = new Date(trimmed);
-    if (isNaN(date.getTime())) {
-      return null;
-    }
-    
-    return date.toISOString();
+    const d = new Date(trimmed);
+    if (isNaN(d.getTime())) return null;
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
   } catch {
     return null;
   }
@@ -272,11 +243,11 @@ export function normalizeCandidateData<T extends Partial<CandidateProfileInsert>
   }
   
   if (data.experience !== undefined) {
-    normalized.experience = normalizeExperience(data.experience);
+    normalized.experience = normalizeExperienceStrings(data.experience as unknown as string[]);
   }
   
   if (data.certifications !== undefined) {
-    normalized.certifications = normalizeCertifications(data.certifications);
+    normalized.certifications = normalizeCertificationStrings(data.certifications as unknown as string[]);
   }
   
   // Normalize URL fields
@@ -341,7 +312,17 @@ export function normalizeCandidateData<T extends Partial<CandidateProfileInsert>
   if (data.location !== undefined) normalized.location = trimOrNull(data.location);
   if (data.school !== undefined) normalized.school = trimOrNull(data.school);
   if (data.degree_level !== undefined) normalized.degree_level = trimOrNull(data.degree_level);
-  if (data.graduation_date !== undefined) normalized.graduation_date = trimOrNull(data.graduation_date);
+  if (data.graduation_date !== undefined) {
+    const d = new Date(String(data.graduation_date));
+    if (!isNaN(d.getTime())) {
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      normalized.graduation_date = `${y}-${m}-${day}`;
+    } else {
+      normalized.graduation_date = null;
+    }
+  }
   if (data.work_authorization !== undefined) normalized.work_authorization = trimOrNull(data.work_authorization);
   if (data.pronouns !== undefined) normalized.pronouns = trimOrNull(data.pronouns);
   if (data.timezone !== undefined) normalized.timezone = trimOrNull(data.timezone);
@@ -352,16 +333,16 @@ export function normalizeCandidateData<T extends Partial<CandidateProfileInsert>
     const n = typeof data.gpa === 'number' ? data.gpa : parseFloat(String(data.gpa));
     normalized.gpa = isFinite(n) ? n : null;
   }
-  if (data.years_experience !== undefined) {
-    const n = typeof data.years_experience === 'number' ? data.years_experience : parseInt(String(data.years_experience), 10);
-    normalized.years_experience = Number.isInteger(n) ? n : null;
+  if (data.years_of_experience !== undefined) {
+    const n = typeof data.years_of_experience === 'number' ? data.years_of_experience : parseInt(String(data.years_of_experience), 10);
+    normalized.years_of_experience = Number.isInteger(n) ? n : null;
   }
 
   // Booleans
   const toBoolOrNull = (v: unknown) => (typeof v === 'boolean' ? v : v == null ? null : ['true','1','yes','on'].includes(String(v).toLowerCase()) ? true : ['false','0','no','off'].includes(String(v).toLowerCase()) ? false : null);
   if (data.requires_sponsorship !== undefined) normalized.requires_sponsorship = toBoolOrNull(data.requires_sponsorship);
   if (data.open_to_relocation !== undefined) normalized.open_to_relocation = toBoolOrNull(data.open_to_relocation);
-  if (data.eeo_prefer_not_to_say !== undefined) normalized.eeo_prefer_not_to_say = toBoolOrNull(data.eeo_prefer_not_to_say);
+  // eeo_prefer_not_to_say not in DB
 
   // EEO strings
   if (data.eeo_gender !== undefined) normalized.eeo_gender = trimOrNull(data.eeo_gender);

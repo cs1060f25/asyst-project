@@ -8,8 +8,10 @@ import {
   validateCandidateProfileInsert, 
   validateCandidateProfileUpdate,
   safeValidateCandidateProfileInsert,
-  safeValidateCandidateProfileUpdate 
+  CandidateProfileUpdateSchema
 } from './validation/candidate-schema';
+import { z } from 'zod';
+import type { CandidateProfileInsertValidated } from './validation/candidate-schema';
 import { 
   getCandidateProfile, 
   createCandidateProfile, 
@@ -46,43 +48,39 @@ export async function saveCandidateProfile(
   });
   
   // Step 2: Normalize the validated data
-  const normalizedData = normalizeCandidateData(validatedData);
+  const normalizedData = normalizeCandidateData(validatedData) as CandidateProfileInsertValidated;
   const forInsert: CandidateProfileInsert = {
     user_id: userId,
     name: normalizedData.name,
     email: normalizedData.email,
     phone: normalizedData.phone ?? null,
     education: normalizedData.education ?? null,
+    major: normalizedData.major ?? null,
     resume_url: normalizedData.resume_url ?? null,
     skills: normalizedData.skills ?? [],
-    experience: (normalizedData.experience ?? []).map(e => ({
-      company: e.company,
-      title: e.title,
-      start_date: e.start_date,
-      end_date: e.end_date ?? null,
-      description: e.description ?? "",
-    })),
-    certifications: (normalizedData.certifications ?? []).map(c => ({
-      name: c.name,
-      issuer: c.issuer,
-      date: c.date,
-      expiry: c.expiry ?? null,
-    })),
+    experience: normalizedData.experience ?? [],
+    certifications: normalizedData.certifications ?? [],
     linkedin_url: normalizedData.linkedin_url ?? null,
     github_url: normalizedData.github_url ?? null,
     portfolio_url: normalizedData.portfolio_url ?? null,
+    website_url: normalizedData.website_url ?? null,
+    twitter_url: normalizedData.twitter_url ?? null,
+    mastodon_url: normalizedData.mastodon_url ?? null,
+    dribbble_url: normalizedData.dribbble_url ?? null,
+    leetcode_url: normalizedData.leetcode_url ?? null,
+    codeforces_url: normalizedData.codeforces_url ?? null,
+    hackerrank_url: normalizedData.hackerrank_url ?? null,
     offer_deadline: normalizedData.offer_deadline ?? null,
     eeo_gender: normalizedData.eeo_gender ?? null,
     eeo_race_ethnicity: normalizedData.eeo_race_ethnicity ?? null,
     eeo_veteran_status: normalizedData.eeo_veteran_status ?? null,
     eeo_disability_status: normalizedData.eeo_disability_status ?? null,
-    eeo_prefer_not_to_say: normalizedData.eeo_prefer_not_to_say ?? null,
     location: normalizedData.location ?? null,
     school: normalizedData.school ?? null,
     degree_level: normalizedData.degree_level ?? null,
     graduation_date: normalizedData.graduation_date ?? null,
     gpa: normalizedData.gpa ?? null,
-    years_experience: normalizedData.years_experience ?? null,
+    years_of_experience: normalizedData.years_of_experience ?? null,
     work_authorization: normalizedData.work_authorization ?? null,
     requires_sponsorship: normalizedData.requires_sponsorship ?? null,
     open_to_relocation: normalizedData.open_to_relocation ?? null,
@@ -91,13 +89,6 @@ export async function saveCandidateProfile(
     languages: normalizedData.languages ?? [],
     frameworks: normalizedData.frameworks ?? [],
     timezone: normalizedData.timezone ?? null,
-    website_url: normalizedData.website_url ?? null,
-    twitter_url: normalizedData.twitter_url ?? null,
-    mastodon_url: normalizedData.mastodon_url ?? null,
-    dribbble_url: normalizedData.dribbble_url ?? null,
-    leetcode_url: normalizedData.leetcode_url ?? null,
-    codeforces_url: normalizedData.codeforces_url ?? null,
-    hackerrank_url: normalizedData.hackerrank_url ?? null,
     referral_source: normalizedData.referral_source ?? null,
   };
   
@@ -163,43 +154,39 @@ export async function safeSaveCandidateProfile(
     }
     
     // Step 2: Normalize the validated data
-    const normalizedData = normalizeCandidateData(validationResult.data!);
+    const normalizedData = normalizeCandidateData(validationResult.data!) as CandidateProfileInsertValidated;
     const forInsert: CandidateProfileInsert = {
       user_id: userId,
       name: normalizedData.name,
       email: normalizedData.email,
       phone: normalizedData.phone ?? null,
       education: normalizedData.education ?? null,
+      major: normalizedData.major ?? null,
       resume_url: normalizedData.resume_url ?? null,
       skills: normalizedData.skills ?? [],
-      experience: (normalizedData.experience ?? []).map(e => ({
-        company: e.company,
-        title: e.title,
-        start_date: e.start_date,
-        end_date: e.end_date ?? null,
-        description: e.description ?? "",
-      })),
-      certifications: (normalizedData.certifications ?? []).map(c => ({
-        name: c.name,
-        issuer: c.issuer,
-        date: c.date,
-        expiry: c.expiry ?? null,
-      })),
+      experience: normalizedData.experience ?? [],
+      certifications: normalizedData.certifications ?? [],
       linkedin_url: normalizedData.linkedin_url ?? null,
       github_url: normalizedData.github_url ?? null,
       portfolio_url: normalizedData.portfolio_url ?? null,
+      website_url: normalizedData.website_url ?? null,
+      twitter_url: normalizedData.twitter_url ?? null,
+      mastodon_url: normalizedData.mastodon_url ?? null,
+      dribbble_url: normalizedData.dribbble_url ?? null,
+      leetcode_url: normalizedData.leetcode_url ?? null,
+      codeforces_url: normalizedData.codeforces_url ?? null,
+      hackerrank_url: normalizedData.hackerrank_url ?? null,
       offer_deadline: normalizedData.offer_deadline ?? null,
       eeo_gender: normalizedData.eeo_gender ?? null,
       eeo_race_ethnicity: normalizedData.eeo_race_ethnicity ?? null,
       eeo_veteran_status: normalizedData.eeo_veteran_status ?? null,
       eeo_disability_status: normalizedData.eeo_disability_status ?? null,
-      eeo_prefer_not_to_say: normalizedData.eeo_prefer_not_to_say ?? null,
       location: normalizedData.location ?? null,
       school: normalizedData.school ?? null,
       degree_level: normalizedData.degree_level ?? null,
       graduation_date: normalizedData.graduation_date ?? null,
       gpa: normalizedData.gpa ?? null,
-      years_experience: normalizedData.years_experience ?? null,
+      years_of_experience: normalizedData.years_of_experience ?? null,
       work_authorization: normalizedData.work_authorization ?? null,
       requires_sponsorship: normalizedData.requires_sponsorship ?? null,
       open_to_relocation: normalizedData.open_to_relocation ?? null,
@@ -208,13 +195,6 @@ export async function safeSaveCandidateProfile(
       languages: normalizedData.languages ?? [],
       frameworks: normalizedData.frameworks ?? [],
       timezone: normalizedData.timezone ?? null,
-      website_url: normalizedData.website_url ?? null,
-      twitter_url: normalizedData.twitter_url ?? null,
-      mastodon_url: normalizedData.mastodon_url ?? null,
-      dribbble_url: normalizedData.dribbble_url ?? null,
-      leetcode_url: normalizedData.leetcode_url ?? null,
-      codeforces_url: normalizedData.codeforces_url ?? null,
-      hackerrank_url: normalizedData.hackerrank_url ?? null,
       referral_source: normalizedData.referral_source ?? null,
     };
 
@@ -247,18 +227,29 @@ export async function safeUpdateCandidateProfile(
   error?: string;
 }> {
   try {
-    // Step 1: Safe validation
-    const validationResult = safeValidateCandidateProfileUpdate(data);
-    
-    if (!validationResult.success) {
+    // Step 1: Validate fields individually to allow partial updates
+    const shape = CandidateProfileUpdateSchema.shape as Record<string, z.ZodTypeAny>;
+    const clean: Record<string, unknown> = {};
+    const invalid: string[] = [];
+    for (const [key, value] of Object.entries(data || {})) {
+      if (!(key in shape)) continue;
+      const single = z.object({ [key]: shape[key] });
+      const res = single.safeParse({ [key]: value });
+      if (res.success) {
+        clean[key] = (res.data as Record<string, unknown>)[key];
+      } else {
+        invalid.push(key);
+      }
+    }
+    if (Object.keys(clean).length === 0) {
       return {
         success: false,
-        error: `Validation failed: ${validationResult.error?.issues.map(i => i.message).join(', ')}`
+        error: invalid.length ? `Validation failed for fields: ${invalid.join(', ')}` : 'No valid fields to update'
       };
     }
-    
-    // Step 2: Normalize the validated data
-    const normalizedData = normalizeCandidateData(validationResult.data!) as CandidateProfileUpdate;
+
+    // Step 2: Normalize the sanitized data
+    const normalizedData = normalizeCandidateData(clean) as CandidateProfileUpdate;
     
     // Step 3: Update in database
     const profile = await updateCandidateProfile(userId, normalizedData);
