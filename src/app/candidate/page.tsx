@@ -103,10 +103,18 @@ export default function CandidatePage() {
     setError(null);
     
     try {
-      // Check if job has supplemental questions
-      const job = jobs.find(j => j.id === jobId);
+      // Check if job has supplemental questions (use fresh data to avoid stale cache)
+      let job = jobs.find(j => j.id === jobId);
+      if (!job || !Array.isArray(job.supplementalQuestions)) {
+        try {
+          const res = await fetch('/api/jobs', { cache: 'no-store' });
+          const latestJobs = await res.json();
+          const latest = Array.isArray(latestJobs) ? latestJobs.find((j: any) => j.id === jobId) : null;
+          if (latest) job = latest as unknown as Job;
+        } catch {}
+      }
       if (job?.supplementalQuestions && job.supplementalQuestions.length > 0) {
-        // Redirect to supplemental questions page
+        // If any supplemental questions exist, always route to supplemental flow
         router.push(`/candidate/apply/${jobId}`);
         return;
       }
@@ -119,6 +127,12 @@ export default function CandidatePage() {
       });
       const data = await res.json();
       if (!res.ok) {
+        // If server enforces required supplementals, redirect to supplemental flow
+        if (res.status === 400 && data?.error === 'Supplemental questions required') {
+          setPendingJobForSupp(jobId);
+          setSuppModalOpen(true);
+          return;
+        }
         throw new Error(data?.error || "Failed to apply");
       }
       if (data.created) {

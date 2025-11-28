@@ -6,6 +6,8 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabaseClient";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { Job } from "@/lib/types/database";
 import type { User } from "@supabase/supabase-js";
 
@@ -22,6 +24,7 @@ export default function JobDetailsPage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [suppModalOpen, setSuppModalOpen] = useState(false);
+  const [answers, setAnswers] = useState<Record<string, string>>({});
 
   // Load job data and check authentication
   useEffect(() => {
@@ -42,6 +45,16 @@ export default function JobDetailsPage() {
           setError("Job not found");
         } else {
           setJob(jobResult.data);
+          // Initialize answers for supplemental questions if present
+          const reqs = jobResult.data?.requirements;
+          const supp = reqs && typeof reqs === 'object' ? (reqs as any).supplementalQuestions : undefined;
+          if (Array.isArray(supp)) {
+            const initial: Record<string, string> = {};
+            for (const q of supp) {
+              if (q && typeof q.id === 'string') initial[q.id] = "";
+            }
+            setAnswers(initial);
+          }
         }
 
         // Set user data - try both getUser and getSession for compatibility
@@ -115,13 +128,28 @@ export default function JobDetailsPage() {
         .eq('user_id', user.id)
         .maybeSingle();
 
-      // Check if job has supplemental questions - if so, redirect to supplemental page
+      // If job has supplemental questions, validate required and include answers
+      let supplementalPayload: Record<string, string> | undefined = undefined;
       if (job?.requirements && typeof job.requirements === 'object') {
         const requirements = job.requirements as Record<string, any>;
-        const hasSupp = Array.isArray(requirements.supplementalQuestions) && requirements.supplementalQuestions.length > 0;
-        if (hasSupp) {
-          setSuppModalOpen(true);
-          return;
+        const supp: any[] = Array.isArray(requirements.supplementalQuestions) ? requirements.supplementalQuestions : [];
+        if (supp.length > 0) {
+          // Validate required
+          const missing: string[] = [];
+          for (const q of supp) {
+            if (q?.required && typeof q.id === 'string') {
+              const val = (answers[q.id] ?? '').trim();
+              if (!val) missing.push(q.id);
+            }
+          }
+          if (missing.length > 0) {
+            setError("Please complete all required supplemental questions before applying.");
+            // Keep modal pattern in case you still want the dedicated page
+            setSuppModalOpen(true);
+            setSubmitting(false);
+            return;
+          }
+          supplementalPayload = Object.fromEntries(Object.entries(answers).map(([k, v]) => [k, (v || '').trim()]));
         }
       }
 
@@ -133,7 +161,7 @@ export default function JobDetailsPage() {
           job_id: jobId,
           resume_url: profile?.resume_url,
           cover_letter: "Applied via job details page",
-          supplemental_answers: {}
+          supplemental_answers: supplementalPayload || {}
         }),
       });
 
@@ -243,12 +271,61 @@ export default function JobDetailsPage() {
           <div>
             <h2 className="text-sm font-semibold text-gray-700 mb-2">Requirements</h2>
             <div className="text-sm space-y-1">
-              {Object.entries(job.requirements).map(([key, value]) => (
-                <div key={key} className="flex gap-2">
-                  <span className="font-medium capitalize">{key.replace('_', ' ')}:</span>
-                  <span>{Array.isArray(value) ? value.join(', ') : String(value)}</span>
-                </div>
-              ))}
+              {Object.entries(job.requirements).map(([key, value]) => {
+                if (key === 'supplementalQuestions' && Array.isArray(value)) {
+                  return (
+                    <div key={key} className="space-y-2">
+                      <div className="font-medium">Supplemental Questions:</div>
+                      <div className="space-y-4">
+                        {value.map((q: any, idx: number) => (
+                          <div key={q?.id || idx} className="space-y-2 border rounded-md p-3">
+                            <div className="text-sm font-medium">
+                              {idx + 1}. {(q && (q.question || q.label)) ? (q.question || q.label) : 'Question'}
+                              {q?.required ? <span className="text-red-500 ml-1">*</span> : null}
+                            </div>
+                            {q?.type === 'text' && (
+                              <Input
+                                value={answers[q.id] || ""}
+                                onChange={(e) => setAnswers(prev => ({ ...prev, [q.id]: e.target.value }))}
+                                placeholder="Your answer"
+                              />
+                            )}
+                            {q?.type === 'textarea' && (
+                              <textarea
+                                value={answers[q.id] || ""}
+                                onChange={(e) => setAnswers(prev => ({ ...prev, [q.id]: e.target.value }))}
+                                placeholder="Your answer"
+                                className="w-full min-h-[100px] px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-vertical text-sm"
+                              />
+                            )}
+                            {q?.type === 'select' && Array.isArray(q?.options) && (
+                              <Select
+                                value={answers[q.id] || ""}
+                                onValueChange={(val) => setAnswers(prev => ({ ...prev, [q.id]: val }))}
+                              >
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select an option" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {q.options.map((opt: string, i: number) => (
+                                    <SelectItem key={i} value={opt}>{opt}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                }
+                return (
+                  <div key={key} className="flex gap-2">
+                    <span className="font-medium capitalize">{key.replace('_', ' ')}:</span>
+                    <span>{Array.isArray(value) ? value.join(', ') : String(value)}</span>
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}
@@ -303,7 +380,7 @@ export default function JobDetailsPage() {
         actions={
           <>
             <Button variant="outline" onClick={() => setSuppModalOpen(false)}>Cancel</Button>
-            <Button onClick={() => { setSuppModalOpen(false); router.push(`/jobs/${jobId}/supplemental`); }}>Continue</Button>
+            <Button onClick={() => { setSuppModalOpen(false); router.push(`/candidate/apply/${jobId}`); }}>Continue</Button>
           </>
         }
       >

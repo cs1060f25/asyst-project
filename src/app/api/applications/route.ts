@@ -130,11 +130,35 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     
     // Support both jobId (camelCase) and job_id (snake_case) for backward compatibility
-    const normalizedBody = {
+    const normalizedBody: any = {
       ...body,
       job_id: body.job_id || body.jobId
     };
     
+    // Normalize supplemental answers from various payload shapes into a flat record
+    // 1) supplemental_answers: Record<string, any>
+    // 2) supplementalAnswers: Array<{ questionId: string; answer: string }>
+    // 3) details: { answers: Record<string, string> }
+    const answersRecord: Record<string, string> | null = (() => {
+      if (normalizedBody.supplemental_answers && typeof normalizedBody.supplemental_answers === 'object') {
+        return normalizedBody.supplemental_answers as Record<string, string>;
+      }
+      if (Array.isArray(normalizedBody.supplementalAnswers)) {
+        const out: Record<string, string> = {};
+        for (const item of normalizedBody.supplementalAnswers) {
+          if (item && typeof item === 'object' && typeof item.questionId === 'string') {
+            out[item.questionId] = String(item.answer ?? '').trim();
+          }
+        }
+        return out;
+      }
+      if (normalizedBody.details && typeof normalizedBody.details === 'object' && normalizedBody.details.answers) {
+        return normalizedBody.details.answers as Record<string, string>;
+      }
+      return null;
+    })();
+    normalizedBody.supplemental_answers = answersRecord;
+
     const validationResult = ApplicationCreateSchema.safeParse(normalizedBody);
     
     if (!validationResult.success) {
@@ -179,7 +203,7 @@ export async function POST(req: NextRequest) {
     // ===== STEP 4: Verify Job Exists =====
     const { data: job, error: jobError } = await supabase
       .from('jobs')
-      .select('id, title, company, status')
+      .select('id, title, company, status, requirements')
       .eq('id', validatedData.job_id)
       .single();
     
@@ -202,6 +226,31 @@ export async function POST(req: NextRequest) {
       );
     }
     
+    // Enforce required supplemental questions if present
+    const reqs = job.requirements && typeof job.requirements === 'object' ? (job.requirements as any) : null;
+    const supplemental = reqs?.supplementalQuestions;
+    if (Array.isArray(supplemental) && supplemental.length > 0) {
+      const requiredIds: string[] = supplemental.filter((q: any) => q && q.required).map((q: any) => q.id).filter((id: any) => typeof id === 'string');
+      if (requiredIds.length > 0) {
+        const provided = answersRecord || {};
+        const missing: string[] = [];
+        for (const qid of requiredIds) {
+          const val = (provided[qid] ?? '').toString().trim();
+          if (!val) missing.push(qid);
+        }
+        if (missing.length > 0) {
+          return NextResponse.json(
+            { 
+              error: "Supplemental questions required",
+              missing_required_questions: missing,
+              message: "Please complete all required supplemental questions before applying."
+            },
+            { status: 400 }
+          );
+        }
+      }
+    }
+    
     // ===== STEP 5: Get Resume URL from Profile (if not provided) =====
     let resumeUrl = validatedData.resume_url;
     
@@ -220,8 +269,8 @@ export async function POST(req: NextRequest) {
       job_id: validatedData.job_id,
       candidate_id: userId,  // 🔒 SECURE: Use authenticated user's ID
       resume_url: resumeUrl,
-      cover_letter: validatedData.cover_letter || null,
-      supplemental_answers: validatedData.supplemental_answers || null,
+      cover_letter: (normalizedBody.details?.coverLetter ?? validatedData.cover_letter) || null,
+      supplemental_answers: answersRecord || null,
       status: 'applied',
     };
     

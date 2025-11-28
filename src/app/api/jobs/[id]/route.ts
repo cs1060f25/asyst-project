@@ -12,7 +12,7 @@ export async function GET(_req: Request, context: unknown) {
     // Fetch job by ID
     const { data, error } = await supabase
       .from('jobs')
-      .select('*')
+      .select('id, title, company, location, description, salary_range, status, deadline, requirements')
       .eq('id', jobId)
       .single();
     
@@ -24,7 +24,12 @@ export async function GET(_req: Request, context: unknown) {
       );
     }
     
-    return NextResponse.json(data);
+    const supp = data?.requirements && typeof data.requirements === 'object' ? (data.requirements as any).supplementalQuestions : undefined;
+    const mapped = {
+      ...data,
+      supplementalQuestions: Array.isArray(supp) ? supp : undefined,
+    };
+    return NextResponse.json(mapped);
   } catch (error: any) {
     console.error('Unexpected error:', error);
     return NextResponse.json(

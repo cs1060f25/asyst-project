@@ -22,6 +22,13 @@ export default function SupplementalQuestionsPage() {
   const router = useRouter();
   const jobId = params?.id as string;
 
+  // Deprecated route: redirect to the dedicated candidate apply page
+  useEffect(() => {
+    if (jobId) {
+      router.replace(`/candidate/apply/${jobId}`);
+    }
+  }, [jobId, router]);
+
   const [job, setJob] = useState<Job | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);

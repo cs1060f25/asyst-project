@@ -22,21 +22,20 @@ export default function ApplyWithQuestionsPage() {
   useEffect(() => {
     const fetchJob = async () => {
       try {
-        const response = await fetch("/api/jobs");
-        const jobs = await response.json();
-        const foundJob = jobs.find((j: Job) => j.id === jobId);
-        
-        if (!foundJob) {
+        const response = await fetch(`/api/jobs/${jobId}`, { cache: 'no-store' });
+        if (!response.ok) {
           setError("Job not found");
+          setLoading(false);
           return;
         }
-        
-        setJob(foundJob);
-        
+        const foundJob = await response.json();
+        const supplemental = (foundJob as any).supplementalQuestions || ((foundJob as any).requirements && (foundJob as any).requirements.supplementalQuestions);
+        const merged = supplemental ? { ...(foundJob as any), supplementalQuestions: supplemental } : foundJob;
+        setJob(merged as Job);
         // Initialize answers for all questions
-        if (foundJob.supplementalQuestions) {
+        if ((merged as any).supplementalQuestions) {
           const initialAnswers: Record<string, string> = {};
-          foundJob.supplementalQuestions.forEach((q: SupplementalQuestion) => {
+          (merged as any).supplementalQuestions.forEach((q: SupplementalQuestion) => {
             initialAnswers[q.id] = "";
           });
           setAnswers(initialAnswers);
