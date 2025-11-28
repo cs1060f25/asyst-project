@@ -98,7 +98,7 @@ function RoleSelectionInner() {
         if (!existing) {
           const { error: insertError } = await supabase
             .from("recruiter_profiles")
-            .insert({ user_id: user.id, name: displayName, email: user.email ?? null, company: null, title: null })
+            .insert({ user_id: user.id, name: displayName, email: user.email ?? null, company_name: displayName || '', job_title: 'Recruiter' })
             .single();
           if (insertError) throw insertError;
         }

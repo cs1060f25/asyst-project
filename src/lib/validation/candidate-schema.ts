@@ -33,6 +33,25 @@ const NameSchema = z.string().min(1, 'Name is required').max(100, 'Name too long
 const SkillsSchema = z.array(z.string().max(50, 'Skill name too long'))
   .max(50, 'Too many skills (max 50)');
 
+// Coercer for YYYY-MM or YYYY-MM-DD -> YYYY-MM-DD
+const YMDDateCoercer = z.preprocess((v) => {
+  if (v == null) return null;
+  if (typeof v !== 'string') return v;
+  const s = v.trim();
+  if (!s) return null;
+  // Accept YYYY-MM -> append -01
+  if (/^\d{4}-\d{2}$/.test(s)) return `${s}-01`;
+  // If parseable, format to YYYY-MM-DD
+  const d = new Date(s);
+  if (!isNaN(d.getTime())) {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  }
+  return s;
+}, z.string().regex(/^\d{4}-\d{2}-\d{2}$/,'Graduation date must be in YYYY-MM-DD format').nullable());
+
 // Main candidate profile validation schema for insertion
 export const CandidateProfileInsertSchema = z.object({
   user_id: z.string().uuid('Invalid user ID format'),
@@ -59,7 +78,7 @@ export const CandidateProfileInsertSchema = z.object({
   location: z.string().max(200).nullable().optional(),
   school: z.string().max(200).nullable().optional(),
   degree_level: z.string().max(100).nullable().optional(),
-  graduation_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/,'Graduation date must be in YYYY-MM-DD format').nullable().optional(),
+  graduation_date: YMDDateCoercer.optional(),
   gpa: z.number().min(0).max(4.0).nullable().optional(),
   years_of_experience: z.number().int().min(0).max(60).nullable().optional(),
   work_authorization: z.string().max(100).nullable().optional(),
