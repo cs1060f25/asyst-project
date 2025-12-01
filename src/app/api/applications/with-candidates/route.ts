@@ -7,12 +7,12 @@ export async function GET() {
   try {
     const supabase = await createClient();
 
-    type DbApplication = { job_id: string; status: string; applied_at: string; candidate_id: string };
+    type DbApplication = { id: string; job_id: string; status: string; applied_at: string; candidate_id: string };
     type CandidateProfile = { user_id: string; name: string | null; email: string | null; offer_deadline: string | null; resume_url: string | null };
 
     const { data: apps, error: appsError } = await supabase
       .from('applications')
-      .select('job_id, status, applied_at, candidate_id')
+      .select('id, job_id, status, applied_at, candidate_id')
       .order('applied_at', { ascending: false });
 
     if (appsError || !apps) {
@@ -42,6 +42,7 @@ export async function GET() {
     const transformed = (apps as DbApplication[]).map(row => {
       const prof = profilesMap.get(row.candidate_id);
       return {
+        id: row.id,
         jobId: row.job_id,
         status: statusMap[row.status] || 'Applied',
         appliedAt: row.applied_at,
