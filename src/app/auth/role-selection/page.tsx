@@ -126,88 +126,112 @@ function RoleSelectionInner() {
         </div>
       )}
 
-      <div className="grid md:grid-cols-2 gap-6">
+      <div className="grid md:grid-cols-2 gap-8">
         {/* Candidate Card */}
         <div 
-          className="border rounded-lg p-8 space-y-4 hover:border-blue-500 hover:shadow-lg transition-all cursor-pointer group"
+          className="relative bg-white border-2 border-gray-200 rounded-2xl p-8 space-y-6 hover:border-blue-500 hover:shadow-2xl transition-all duration-300 cursor-pointer group transform hover:-translate-y-1"
           onClick={() => handleRoleSelection("candidate")}
         >
-          <div className="flex justify-center">
-            <div className="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center group-hover:bg-blue-200 transition-colors">
-              <Users className="w-8 h-8 text-blue-600" />
+          <div className="absolute -top-6 left-1/2 -translate-x-1/2">
+            <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+              <Users className="w-10 h-10 text-white" />
             </div>
           </div>
           
-          <div className="text-center space-y-2">
-            <h2 className="text-2xl font-semibold">I'm a Candidate</h2>
-            <p className="text-sm text-muted-foreground">
+          <div className="pt-8 text-center space-y-3">
+            <h2 className="text-2xl font-bold text-gray-900">I'm a Candidate</h2>
+            <p className="text-sm text-gray-600 leading-relaxed">
               Looking for job opportunities and wanting to apply to positions
             </p>
           </div>
 
-          <ul className="space-y-2 text-sm">
-            <li className="flex items-center gap-2">
-              <span className="text-green-600">✓</span>
-              <span>Apply to jobs with one click</span>
+          <ul className="space-y-3 text-sm">
+            <li className="flex items-center gap-3">
+              <div className="flex-shrink-0 w-5 h-5 rounded-full bg-green-100 flex items-center justify-center">
+                <span className="text-green-600 text-xs font-bold">✓</span>
+              </div>
+              <span className="text-gray-700">Apply to jobs with one click</span>
             </li>
-            <li className="flex items-center gap-2">
-              <span className="text-green-600">✓</span>
-              <span>Track application status</span>
+            <li className="flex items-center gap-3">
+              <div className="flex-shrink-0 w-5 h-5 rounded-full bg-green-100 flex items-center justify-center">
+                <span className="text-green-600 text-xs font-bold">✓</span>
+              </div>
+              <span className="text-gray-700">Track application status</span>
             </li>
-            <li className="flex items-center gap-2">
-              <span className="text-green-600">✓</span>
-              <span>Manage your profile and resume</span>
+            <li className="flex items-center gap-3">
+              <div className="flex-shrink-0 w-5 h-5 rounded-full bg-green-100 flex items-center justify-center">
+                <span className="text-green-600 text-xs font-bold">✓</span>
+              </div>
+              <span className="text-gray-700">Manage your profile and resume</span>
             </li>
-            <li className="flex items-center gap-2">
-              <span className="text-green-600">✓</span>
-              <span>Get notifications on updates</span>
+            <li className="flex items-center gap-3">
+              <div className="flex-shrink-0 w-5 h-5 rounded-full bg-green-100 flex items-center justify-center">
+                <span className="text-green-600 text-xs font-bold">✓</span>
+              </div>
+              <span className="text-gray-700">Get notifications on updates</span>
             </li>
           </ul>
 
-          <Button className="w-full" size="lg" disabled={loading}>
-            Continue as Candidate
+          <Button 
+            className="w-full h-12 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold rounded-lg shadow-md hover:shadow-lg transition-all" 
+            size="lg" 
+            disabled={loading}
+          >
+            Continue as Candidate →
           </Button>
         </div>
 
         {/* Recruiter Card */}
         <div 
-          className="border rounded-lg p-8 space-y-4 hover:border-purple-500 hover:shadow-lg transition-all cursor-pointer group"
+          className="relative bg-white border-2 border-gray-200 rounded-2xl p-8 space-y-6 hover:border-purple-500 hover:shadow-2xl transition-all duration-300 cursor-pointer group transform hover:-translate-y-1"
           onClick={() => handleRoleSelection("recruiter")}
         >
-          <div className="flex justify-center">
-            <div className="w-16 h-16 rounded-full bg-purple-100 flex items-center justify-center group-hover:bg-purple-200 transition-colors">
-              <Briefcase className="w-8 h-8 text-purple-600" />
+          <div className="absolute -top-6 left-1/2 -translate-x-1/2">
+            <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+              <Briefcase className="w-10 h-10 text-white" />
             </div>
           </div>
           
-          <div className="text-center space-y-2">
-            <h2 className="text-2xl font-semibold">I'm a Recruiter</h2>
-            <p className="text-sm text-muted-foreground">
+          <div className="pt-8 text-center space-y-3">
+            <h2 className="text-2xl font-bold text-gray-900">I'm a Recruiter</h2>
+            <p className="text-sm text-gray-600 leading-relaxed">
               Looking to post jobs and hire talented candidates
             </p>
           </div>
 
-          <ul className="space-y-2 text-sm">
-            <li className="flex items-center gap-2">
-              <span className="text-green-600">✓</span>
-              <span>Post job opportunities</span>
+          <ul className="space-y-3 text-sm">
+            <li className="flex items-center gap-3">
+              <div className="flex-shrink-0 w-5 h-5 rounded-full bg-green-100 flex items-center justify-center">
+                <span className="text-green-600 text-xs font-bold">✓</span>
+              </div>
+              <span className="text-gray-700">Post job opportunities</span>
             </li>
-            <li className="flex items-center gap-2">
-              <span className="text-green-600">✓</span>
-              <span>Review applications</span>
+            <li className="flex items-center gap-3">
+              <div className="flex-shrink-0 w-5 h-5 rounded-full bg-green-100 flex items-center justify-center">
+                <span className="text-green-600 text-xs font-bold">✓</span>
+              </div>
+              <span className="text-gray-700">Review applications</span>
             </li>
-            <li className="flex items-center gap-2">
-              <span className="text-green-600">✓</span>
-              <span>Manage candidates pipeline</span>
+            <li className="flex items-center gap-3">
+              <div className="flex-shrink-0 w-5 h-5 rounded-full bg-green-100 flex items-center justify-center">
+                <span className="text-green-600 text-xs font-bold">✓</span>
+              </div>
+              <span className="text-gray-700">Manage candidates pipeline</span>
             </li>
-            <li className="flex items-center gap-2">
-              <span className="text-green-600">✓</span>
-              <span>Add supplemental questions</span>
+            <li className="flex items-center gap-3">
+              <div className="flex-shrink-0 w-5 h-5 rounded-full bg-green-100 flex items-center justify-center">
+                <span className="text-green-600 text-xs font-bold">✓</span>
+              </div>
+              <span className="text-gray-700">Add supplemental questions</span>
             </li>
           </ul>
 
-          <Button className="w-full" variant="secondary" size="lg" disabled={loading}>
-            Continue as Recruiter
+          <Button 
+            className="w-full h-12 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white font-semibold rounded-lg shadow-md hover:shadow-lg transition-all" 
+            size="lg" 
+            disabled={loading}
+          >
+            Continue as Recruiter →
           </Button>
         </div>
       </div>
