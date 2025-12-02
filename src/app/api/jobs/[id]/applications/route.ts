@@ -6,11 +6,11 @@ export const runtime = "nodejs";
 // GET /api/jobs/[id]/applications - Get all applications for a specific job
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = await createClient();
-    const jobId = params.id;
+    const { id: jobId } = await params;
     
     // Get the authenticated user
     const { data: { user }, error: authError } = await supabase.auth.getUser();
