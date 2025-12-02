@@ -37,6 +37,17 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   try {
     const supabase = await createClient();
+    
+    // Get the authenticated user
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    
+    if (authError || !user) {
+      return NextResponse.json(
+        { error: "Unauthorized - You must be logged in to create jobs" },
+        { status: 401 }
+      );
+    }
+    
     const body = await req.json();
     
     // Validate required fields
@@ -48,10 +59,11 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Create the job in Supabase
+    // Create the job in Supabase with employer_id
     const { data: newJob, error } = await supabase
       .from('jobs')
       .insert({
+        employer_id: user.id,  // Set the recruiter who created this job
         title: title.trim(),
         company: company.trim(),
         location: location.trim(),

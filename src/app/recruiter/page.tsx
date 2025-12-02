@@ -213,13 +213,22 @@ export default function RecruiterPage() {
             Manage job applications and track candidate progress through your hiring pipeline.
           </p>
         </div>
-        <Button
-          onClick={() => router.push("/recruiter/create-job")}
-          className="flex items-center gap-2"
-        >
-          <Plus className="h-4 w-4" />
-          Create Job
-        </Button>
+        <div className="flex items-center gap-3">
+          <Button
+            variant="outline"
+            onClick={() => router.push("/recruiter/jobs")}
+            className="flex items-center gap-2"
+          >
+            View All Jobs
+          </Button>
+          <Button
+            onClick={() => router.push("/recruiter/create-job")}
+            className="flex items-center gap-2"
+          >
+            <Plus className="h-4 w-4" />
+            Create Job
+          </Button>
+        </div>
       </div>
 
       {/* Filters */}
