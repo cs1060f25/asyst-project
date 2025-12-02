@@ -7,6 +7,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useRouter, useSearchParams } from "next/navigation";
+import { getAuthCallbackUrl } from "@/lib/url";
 
 const schema = z.object({
   email: z.string().email("Enter a valid email"),
@@ -40,7 +41,7 @@ function SignUpInner() {
     setLoading(true);
     try {
       // 1. Sign up the user with Supabase Auth
-      const redirectTo = typeof window !== 'undefined' ? `${window.location.origin}/auth/callback` : undefined;
+      const redirectTo = getAuthCallbackUrl();
       // Derive first/last from full name input
       const trimmedName = name.trim();
       const [first_name, ...rest] = trimmedName.split(/\s+/);
@@ -165,7 +166,7 @@ function SignUpInner() {
             setLoading(true);
             setError(null);
             try {
-              const { error: resendError } = await supabase.auth.resend({ type: 'signup', email });
+              const { error: resendError } = await supabase.auth.resend({ type: 'signup', email, options: { emailRedirectTo: getAuthCallbackUrl() } });
               if (resendError) throw resendError;
               setError("Confirmation email sent. Please check your inbox (and spam folder).");
             } catch (err: any) {

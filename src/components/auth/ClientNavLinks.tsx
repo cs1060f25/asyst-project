@@ -99,11 +99,9 @@ export default function ClientNavLinks() {
 
   if (!ready) {
     // Render basic links while loading; middleware will still enforce protection.
-    // If authenticated, show minimal nav without "Get Started" to avoid confusion
     return (
       <>
         <Link href="/" className="hover:underline">Home</Link>
-        {!isAuthed && <Link href="/auth/role-selection" className="hover:underline">Get Started</Link>}
       </>
     );
   }
@@ -133,7 +131,6 @@ export default function ClientNavLinks() {
   return (
     <>
       <Link href="/" className="hover:underline">Home</Link>
-      {!isAuthed && <Link href="/auth/role-selection" className="hover:underline">Get Started</Link>}
     </>
   );
 }
