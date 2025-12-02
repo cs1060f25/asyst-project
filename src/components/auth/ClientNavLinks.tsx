@@ -118,6 +118,7 @@ export default function ClientNavLinks() {
         ) : (
           <>
             <Link href="/recruiter" className="hover:underline">Dashboard</Link>
+            <Link href="/recruiter/jobs" className="hover:underline">Jobs</Link>
             <Link href="/recruiter/create-job" className="hover:underline">Create Job</Link>
             <Link href="/recruiter/profile" className="hover:underline">Profile</Link>
           </>
