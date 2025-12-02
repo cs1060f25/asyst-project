@@ -2,10 +2,12 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import { Button } from "@/components/ui/button";
 
 export default function AuthMenu() {
+  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [email, setEmail] = useState<string | null>(null);
 
@@ -29,6 +31,8 @@ export default function AuthMenu() {
 
   async function signOut() {
     await supabase.auth.signOut();
+    // Force a hard redirect to ensure cookies are cleared
+    window.location.href = '/';
   }
 
   if (loading) return null;
