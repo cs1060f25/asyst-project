@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ArrowLeft } from "lucide-react";
+import { supabase } from "@/lib/supabaseClient";
 
 type Application = {
   id: string;
@@ -45,6 +46,21 @@ export default function JobApplicationsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [updating, setUpdating] = useState<string | null>(null);
+
+  // Monitor authentication state and redirect on sign-out
+  useEffect(() => {
+    const { data: authSubscription } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_OUT' || !session) {
+        setApplications([]);
+        setJob(null);
+        router.push('/auth/sign-in');
+      }
+    });
+
+    return () => {
+      authSubscription.subscription.unsubscribe();
+    };
+  }, [router]);
 
   useEffect(() => {
     let mounted = true;

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Plus, Briefcase } from "lucide-react";
+import { supabase } from "@/lib/supabaseClient";
 
 type Job = {
   id: string;
@@ -22,6 +23,20 @@ export default function RecruiterJobsPage() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Monitor authentication state and redirect on sign-out
+  useEffect(() => {
+    const { data: authSubscription } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_OUT' || !session) {
+        setJobs([]);
+        router.push('/auth/sign-in');
+      }
+    });
+
+    return () => {
+      authSubscription.subscription.unsubscribe();
+    };
+  }, [router]);
 
   useEffect(() => {
     let mounted = true;
