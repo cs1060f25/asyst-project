@@ -311,24 +311,44 @@ export default function ProfilePage() {
   }
 
   if (loading) {
-    return <div>Loading...</div>;
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="text-center space-y-3">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="text-sm text-gray-600">Loading your profile...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="space-y-8 max-w-2xl">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Profile</h1>
-        <p className="text-sm text-muted-foreground">
-          Manage your personal information and resume.
+    <div className="max-w-4xl mx-auto space-y-8">
+      {/* Header */}
+      <div className="space-y-3">
+        <h1 className="text-3xl sm:text-4xl font-bold tracking-tight bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+          Your Profile
+        </h1>
+        <p className="text-base text-gray-600">
+          Manage your personal information, resume, and professional details.
         </p>
       </div>
 
-      <section className="space-y-4">
-        <div className="grid gap-2">
-          <label className="text-sm font-medium">Name</label>
+      {/* Basic Information Section */}
+      <section className="bg-white rounded-xl border border-gray-200 p-6 sm:p-8 shadow-sm space-y-6">
+        <div className="flex items-center gap-3 pb-2">
+          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center">
+            <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+            </svg>
+          </div>
+          <h2 className="text-xl font-bold text-gray-900">Basic Information</h2>
+        </div>
+        <div className="space-y-2">
+          <label className="text-sm font-semibold text-gray-700">Name</label>
           <Input
             value={profile.name}
             placeholder="Jane Doe"
+            className="h-11 rounded-lg"
             onChange={(e) => setProfile((p) => ({ ...p, name: e.target.value }))}
           />
         </div>
@@ -370,29 +390,32 @@ export default function ProfilePage() {
             <Input value={educationOther} onChange={(e) => setEducationOther(e.target.value)} placeholder="Enter your major" />
           )}
         </div>
-        <div className="grid gap-2">
-          <label className="text-sm font-medium">Email</label>
+        <div className="space-y-2">
+          <label className="text-sm font-semibold text-gray-700">Email</label>
           <Input
             type="email"
             value={profile.email}
             placeholder="jane@example.com"
+            className="h-11 rounded-lg"
             onChange={(e) => setProfile((p) => ({ ...p, email: e.target.value }))}
           />
         </div>
-        <div className="grid gap-2">
-          <label className="text-sm font-medium">Education</label>
+        <div className="space-y-2">
+          <label className="text-sm font-semibold text-gray-700">Education</label>
           <Input
             value={profile.education}
             placeholder="B.S. in Computer Science, Stanford University"
+            className="h-11 rounded-lg"
             onChange={(e) => setProfile((p) => ({ ...p, education: e.target.value }))}
           />
         </div>
-        <div className="grid gap-2">
-          <label className="text-sm font-medium">Offer Deadline</label>
+        <div className="space-y-2">
+          <label className="text-sm font-semibold text-gray-700">Offer Deadline</label>
           <Input
             type="date"
             value={profile.offerDeadline ? profile.offerDeadline.split('T')[0] : ""}
-            min={new Date().toISOString().split('T')[0]} // Prevent selecting past dates
+            min={new Date().toISOString().split('T')[0]}
+            className="h-11 rounded-lg"
             onChange={(e) => {
               const dateValue = e.target.value;
               setProfile((p) => ({ 
@@ -401,21 +424,39 @@ export default function ProfilePage() {
               }));
             }}
           />
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs text-gray-500">
             Set a deadline for competing offers to help recruiters prioritize your applications.
           </p>
         </div>
-        {error && <p className="text-sm text-red-600">{error}</p>}
-        <div className="flex gap-2">
-          <Button onClick={handleSave} disabled={!canSave || saving}>
-            {saving ? "Saving..." : "Save"}
+        {error && (
+          <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-sm text-red-600">{error}</p>
+          </div>
+        )}
+        <div className="pt-2">
+          <Button 
+            onClick={handleSave} 
+            disabled={!canSave || saving}
+            className="h-11 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold rounded-lg shadow-md hover:shadow-lg transition-all"
+          >
+            {saving ? "Saving..." : "Save Basic Info"}
           </Button>
         </div>
       </section>
 
-      <section className="space-y-4">
-        <h2 className="text-lg font-semibold">Candidate Profile (Enhanced)</h2>
-        <p className="text-sm text-muted-foreground">Common SWE fields and optional voluntary disclosures. These save to your Supabase-backed profile.</p>
+      {/* Enhanced Candidate Profile Section */}
+      <section className="bg-white rounded-xl border border-gray-200 p-6 sm:p-8 shadow-sm space-y-6">
+        <div className="flex items-center gap-3 pb-2">
+          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center">
+            <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+          </div>
+          <div>
+            <h2 className="text-xl font-bold text-gray-900">Professional Details</h2>
+            <p className="text-xs text-gray-600">Additional information stored in your Supabase profile</p>
+          </div>
+        </div>
 
         {/* Links */}
         <div className="grid gap-2">
@@ -833,65 +874,119 @@ export default function ProfilePage() {
           <span className="text-sm">Prefer not to say</span>
         </div>
 
-        {candidateError && <p className="text-sm text-red-600">{candidateError}</p>}
-        <div className="flex gap-2">
-          <Button onClick={saveCandidateProfile} disabled={candidateSaving}>
-            {candidateSaving ? "Saving..." : "Save Candidate Profile"}
+        {candidateError && (
+          <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-sm text-red-600">{candidateError}</p>
+          </div>
+        )}
+        <div className="pt-2">
+          <Button 
+            onClick={saveCandidateProfile} 
+            disabled={candidateSaving}
+            className="h-11 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold rounded-lg shadow-md hover:shadow-lg transition-all"
+          >
+            {candidateSaving ? "Saving..." : "Save Professional Details"}
           </Button>
         </div>
       </section>
 
-      <section className="space-y-4">
-        <h2 className="text-lg font-semibold">Resume</h2>
+      {/* Resume Section */}
+      <section className="bg-white rounded-xl border border-gray-200 p-6 sm:p-8 shadow-sm space-y-6">
+        <div className="flex items-center gap-3 pb-2">
+          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center">
+            <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+          </div>
+          <h2 className="text-xl font-bold text-gray-900">Resume</h2>
+        </div>
         {profile.resume ? (
-          <div className="space-y-2">
-            <div className="text-sm">
-              <p>
-                <span className="font-medium">Current:</span> {profile.resume.originalName}
-              </p>
-              <p className="text-muted-foreground">
-                Updated {new Date(profile.resume.updatedAt).toLocaleString()}
-              </p>
-              <p>
-                <a className="text-blue-600 underline" href={profile.resume.url} target="_blank" rel="noreferrer">
-                  View file
-                </a>
-              </p>
+          <div className="space-y-4">
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+              <div className="flex items-start gap-3">
+                <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center">
+                  <svg className="w-5 h-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-gray-900">{profile.resume.originalName}</p>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Updated {new Date(profile.resume.updatedAt).toLocaleDateString()}
+                  </p>
+                  <a 
+                    className="inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700 font-medium mt-2" 
+                    href={profile.resume.url} 
+                    target="_blank" 
+                    rel="noreferrer"
+                  >
+                    View file
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                    </svg>
+                  </a>
+                </div>
+              </div>
             </div>
-            <div className="flex gap-2">
-              <label className="inline-flex items-center gap-2">
+            <div className="flex flex-col sm:flex-row gap-3">
+              <label className="flex-1">
                 <input
                   type="file"
                   accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                   onChange={(e) => {
                     const f = e.target.files?.[0];
                     if (f) handleUpload(f);
-                    e.currentTarget.value = ""; // reset
+                    e.currentTarget.value = "";
                   }}
                   disabled={uploading}
+                  className="block w-full text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 file:cursor-pointer cursor-pointer"
                 />
               </label>
-              <Button variant="secondary" onClick={handleDelete} disabled={uploading}>
-                {uploading ? "Working..." : "Delete"}
+              <Button 
+                variant="outline" 
+                onClick={handleDelete} 
+                disabled={uploading}
+                className="h-10 rounded-lg border-red-300 text-red-600 hover:bg-red-50"
+              >
+                {uploading ? "Deleting..." : "Delete Resume"}
               </Button>
             </div>
-            {uploadError && <p className="text-sm text-red-600">{uploadError}</p>}
+            {uploadError && (
+              <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-sm text-red-600">{uploadError}</p>
+              </div>
+            )}
           </div>
         ) : (
-          <div className="space-y-2">
-            <label className="inline-flex items-center gap-2">
-              <input
-                type="file"
-                accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                onChange={(e) => {
-                  const f = e.target.files?.[0];
-                  if (f) handleUpload(f);
-                  e.currentTarget.value = "";
-                }}
-                disabled={uploading}
-              />
-            </label>
-            {uploadError && <p className="text-sm text-red-600">{uploadError}</p>}
+          <div className="space-y-4">
+            <div className="text-center py-8 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-400 transition-colors">
+              <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-gray-100 mb-3">
+                <svg className="w-6 h-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                </svg>
+              </div>
+              <label className="cursor-pointer">
+                <span className="text-sm font-medium text-blue-600 hover:text-blue-700">Upload a resume</span>
+                <span className="text-sm text-gray-500"> or drag and drop</span>
+                <p className="text-xs text-gray-500 mt-1">PDF, DOC, or DOCX (max 5MB)</p>
+                <input
+                  type="file"
+                  accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) handleUpload(f);
+                    e.currentTarget.value = "";
+                  }}
+                  disabled={uploading}
+                  className="hidden"
+                />
+              </label>
+            </div>
+            {uploadError && (
+              <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-sm text-red-600">{uploadError}</p>
+              </div>
+            )}
           </div>
         )}
       </section>

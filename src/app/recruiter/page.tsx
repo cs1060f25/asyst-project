@@ -201,37 +201,54 @@ export default function RecruiterPage() {
   };
 
   if (loading) {
-    return <div className="flex justify-center py-8">Loading applications...</div>;
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="text-center space-y-3">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto"></div>
+          <p className="text-sm text-gray-600">Loading applications...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Company Dashboard</h1>
-          <p className="text-sm text-muted-foreground">
+    <div className="space-y-8">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="space-y-2">
+          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+            Company Dashboard
+          </h1>
+          <p className="text-base text-gray-600">
             Manage job applications and track candidate progress through your hiring pipeline.
           </p>
         </div>
         <Button
           onClick={() => router.push("/recruiter/create-job")}
-          className="flex items-center gap-2"
+          className="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white shadow-md hover:shadow-lg transition-all h-11 px-6"
         >
-          <Plus className="h-4 w-4" />
+          <Plus className="h-5 w-5" />
           Create Job
         </Button>
       </div>
 
       {/* Filters */}
-      <div className="flex gap-4 items-center">
-        <Input
-          placeholder="Search by job title, company, or status..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="max-w-md"
-        />
+      <div className="flex flex-col sm:flex-row gap-4">
+        <div className="relative flex-1 max-w-md">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <svg className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
+          <Input
+            placeholder="Search by job title, company, or status..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10 h-11 rounded-lg border-gray-300"
+          />
+        </div>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-48">
+          <SelectTrigger className="w-full sm:w-56 h-11 rounded-lg">
             <SelectValue placeholder="Filter by status" />
           </SelectTrigger>
           <SelectContent>
@@ -247,9 +264,9 @@ export default function RecruiterPage() {
       </div>
 
       {/* Applications Table */}
-      <div className="border rounded-lg overflow-hidden">
-        <div className="bg-gray-50 px-6 py-3 border-b">
-          <div className="grid grid-cols-12 gap-4 text-sm font-medium text-gray-700">
+      <div className="border border-gray-200 rounded-xl overflow-hidden bg-white shadow-sm">
+        <div className="bg-gradient-to-r from-gray-50 to-gray-100 px-6 py-4 border-b border-gray-200">
+          <div className="grid grid-cols-12 gap-4 text-sm font-semibold text-gray-700">
             <div className="col-span-2">Candidate</div>
             <div className="col-span-2">Job Title</div>
             <div className="col-span-2">Applied Date</div>
@@ -259,16 +276,26 @@ export default function RecruiterPage() {
           </div>
         </div>
         
-        <div className="divide-y">
+        <div className="divide-y divide-gray-100">
           {filteredApplications.length === 0 ? (
-            <div className="px-6 py-8 text-center text-gray-500">
-              {applications.length === 0 ? "No applications yet." : "No applications match your filters."}
+            <div className="px-6 py-12 text-center">
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 mb-4">
+                <svg className="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              </div>
+              <p className="text-base text-gray-600 font-medium">
+                {applications.length === 0 ? "No applications yet" : "No applications match your filters"}
+              </p>
+              <p className="text-sm text-gray-500 mt-1">
+                {applications.length === 0 ? "Applications will appear here once candidates apply" : "Try adjusting your search criteria"}
+              </p>
             </div>
           ) : (
             filteredApplications.map((app) => {
               const urgency = isMounted ? getDeadlineUrgency(app.candidateInfo?.offerDeadline || null) : null;
               return (
-                <div key={`${app.jobId}-${app.candidateInfo?.email || 'anonymous'}-${app.appliedAt}`} className="px-6 py-4 hover:bg-gray-50">
+                <div key={`${app.jobId}-${app.candidateInfo?.email || 'anonymous'}-${app.appliedAt}`} className="px-6 py-5 hover:bg-blue-50/50 transition-colors">
                   <div className="grid grid-cols-12 gap-4 items-center">
                     <div className="col-span-2">
                       <div className="font-medium">{app.candidateInfo?.name || "Anonymous"}</div>
@@ -333,13 +360,25 @@ export default function RecruiterPage() {
       </div>
 
       {/* Summary Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
-        {["Applied", "Under Review", "Interview", "Offer", "Hired", "Rejected"].map((status) => {
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        {[
+          { status: "Applied", gradient: "from-blue-500 to-blue-600", bg: "bg-blue-50" },
+          { status: "Under Review", gradient: "from-yellow-500 to-yellow-600", bg: "bg-yellow-50" },
+          { status: "Interview", gradient: "from-purple-500 to-purple-600", bg: "bg-purple-50" },
+          { status: "Offer", gradient: "from-green-500 to-green-600", bg: "bg-green-50" },
+          { status: "Hired", gradient: "from-emerald-500 to-emerald-600", bg: "bg-emerald-50" },
+          { status: "Rejected", gradient: "from-red-500 to-red-600", bg: "bg-red-50" }
+        ].map(({ status, gradient, bg }) => {
           const count = applications.filter(app => app.status === status).length;
           return (
-            <div key={status} className="bg-white border rounded-lg p-4 text-center">
-              <div className="text-2xl font-bold text-gray-900">{count}</div>
-              <div className="text-sm text-gray-500">{status}</div>
+            <div key={status} className={`relative overflow-hidden rounded-xl border border-gray-200 ${bg} p-5 shadow-sm hover:shadow-md transition-shadow`}>
+              <div className="relative z-10">
+                <div className={`text-3xl font-bold bg-gradient-to-r ${gradient} bg-clip-text text-transparent`}>
+                  {count}
+                </div>
+                <div className="text-sm font-medium text-gray-700 mt-1">{status}</div>
+              </div>
+              <div className={`absolute -right-4 -bottom-4 w-24 h-24 bg-gradient-to-br ${gradient} opacity-10 rounded-full blur-2xl`}></div>
             </div>
           );
         })}

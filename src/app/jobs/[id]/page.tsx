@@ -198,9 +198,9 @@ export default function JobDetailsPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center min-h-[60vh]">
         <div className="text-center space-y-3">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
           <p className="text-sm text-gray-600">Loading job details...</p>
         </div>
       </div>
@@ -209,48 +209,68 @@ export default function JobDetailsPage() {
 
   if (error || !job) {
     return (
-      <div className="max-w-2xl mx-auto py-8 space-y-4">
-        <p className="text-red-600">{error || "Job not found"}</p>
-        <Link className="text-sm underline text-blue-600" href="/candidate">
-          ← Back to jobs
+      <div className="max-w-2xl mx-auto py-12 text-center space-y-4">
+        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-100 mb-4">
+          <svg className="w-8 h-8 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+        <p className="text-lg font-semibold text-gray-900">{error || "Job not found"}</p>
+        <Link className="inline-flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 font-medium" href="/candidate">
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
+          Back to jobs
         </Link>
       </div>
     );
   }
 
   return (
-    <div className="max-w-3xl mx-auto py-8 px-4 space-y-8">
+    <div className="max-w-4xl mx-auto space-y-8">
       {/* Header */}
       <div className="space-y-4">
         <Link 
-          className="text-sm text-blue-600 hover:underline inline-flex items-center gap-1" 
+          className="inline-flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 font-medium" 
           href="/candidate"
         >
-          <span>←</span> Back to jobs
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
+          Back to jobs
         </Link>
         
-        <div className="space-y-2">
-          <h1 className="text-3xl font-bold tracking-tight">{job.title}</h1>
-          <div className="flex items-center gap-3 text-sm text-gray-600">
-            <span className="font-medium">{job.company}</span>
-            {job.location && (
-              <>
-                <span>•</span>
-                <span>{job.location}</span>
-              </>
-            )}
-            {job.status && (
-              <>
-                <span>•</span>
-                <span className="capitalize">{job.status}</span>
-              </>
-            )}
+        <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl p-8 border border-gray-200">
+          <div className="space-y-4">
+            <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-gray-900">{job.title}</h1>
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
+              <div className="flex items-center gap-2 text-gray-700">
+                <svg className="w-5 h-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                </svg>
+                <span className="font-semibold">{job.company}</span>
+              </div>
+              {job.location && (
+                <div className="flex items-center gap-2 text-gray-700">
+                  <svg className="w-5 h-5 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                  <span>{job.location}</span>
+                </div>
+              )}
+              {job.status && (
+                <span className="px-3 py-1 bg-white rounded-full text-xs font-semibold text-gray-700 border border-gray-300">
+                  {job.status}
+                </span>
+              )}
+            </div>
           </div>
         </div>
       </div>
 
       {/* Job Details */}
-      <div className="space-y-6">
+      <div className="bg-white rounded-xl border border-gray-200 p-6 sm:p-8 shadow-sm space-y-6">
         {job.salary_range && (
           <div>
             <h2 className="text-sm font-semibold text-gray-700 mb-1">Salary Range</h2>
@@ -339,35 +359,55 @@ export default function JobDetailsPage() {
       </div>
 
       {/* Apply Button */}
-      <div className="border-t pt-6 space-y-4">
+      <div className="bg-white rounded-xl border border-gray-200 p-6 sm:p-8 shadow-sm">
         {!user ? (
-          <div className="space-y-2">
-            <Button onClick={handleApply} className="w-full sm:w-auto">
+          <div className="space-y-4">
+            <Button 
+              onClick={handleApply} 
+              className="w-full sm:w-auto h-12 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold rounded-lg shadow-md hover:shadow-lg transition-all"
+            >
               Login to Apply
             </Button>
             <p className="text-sm text-gray-600">You must be logged in to apply to this job</p>
           </div>
         ) : alreadyApplied ? (
-          <Button disabled className="w-full sm:w-auto" variant="secondary">
-            ✓ Already Applied
-          </Button>
+          <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg border border-gray-200">
+            <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
+              <svg className="w-5 h-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <div>
+              <p className="font-semibold text-gray-900">Already Applied</p>
+              <p className="text-sm text-gray-600">You've submitted your application for this position</p>
+            </div>
+          </div>
         ) : success ? (
-          <div className="space-y-2">
-            <Button disabled className="w-full sm:w-auto bg-green-600 hover:bg-green-600">
-              ✓ Application Submitted!
-            </Button>
-            <p className="text-sm text-green-600">Redirecting to your dashboard...</p>
+          <div className="flex items-center gap-3 p-4 bg-green-50 rounded-lg border border-green-200">
+            <div className="flex-shrink-0 w-10 h-10 rounded-full bg-green-200 flex items-center justify-center">
+              <svg className="w-5 h-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <div>
+              <p className="font-semibold text-green-900">Application Submitted!</p>
+              <p className="text-sm text-green-600">Redirecting to your dashboard...</p>
+            </div>
           </div>
         ) : (
-          <div className="space-y-2">
+          <div className="space-y-4">
             <Button 
               onClick={handleApply} 
               disabled={submitting}
-              className="w-full sm:w-auto"
+              className="w-full sm:w-auto h-12 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold rounded-lg shadow-md hover:shadow-lg transition-all"
             >
-              {submitting ? "Submitting..." : "Apply Now"}
+              {submitting ? "Submitting Application..." : "Apply Now"}
             </Button>
-            {error && <p className="text-sm text-red-600">{error}</p>}
+            {error && (
+              <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-sm text-red-600">{error}</p>
+              </div>
+            )}
           </div>
         )}
       </div>
