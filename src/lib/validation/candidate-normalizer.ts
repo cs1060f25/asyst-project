@@ -315,9 +315,10 @@ export function normalizeCandidateData<T extends Partial<CandidateProfileInsert>
   if (data.graduation_date !== undefined) {
     const d = new Date(String(data.graduation_date));
     if (!isNaN(d.getTime())) {
-      const y = d.getFullYear();
-      const m = String(d.getMonth() + 1).padStart(2, '0');
-      const day = String(d.getDate()).padStart(2, '0');
+      // Use UTC components to avoid timezone shifting dates backward
+      const y = d.getUTCFullYear();
+      const m = String(d.getUTCMonth() + 1).padStart(2, '0');
+      const day = String(d.getUTCDate()).padStart(2, '0');
       normalized.graduation_date = `${y}-${m}-${day}`;
     } else {
       normalized.graduation_date = null;
@@ -330,8 +331,13 @@ export function normalizeCandidateData<T extends Partial<CandidateProfileInsert>
 
   // Numeric
   if (data.gpa !== undefined) {
-    const n = typeof data.gpa === 'number' ? data.gpa : parseFloat(String(data.gpa));
-    normalized.gpa = isFinite(n) ? n : null;
+    const nRaw = typeof data.gpa === 'number' ? data.gpa : parseFloat(String(data.gpa));
+    if (isFinite(nRaw)) {
+      const n = Math.round(nRaw * 100) / 100; // round to 2 decimals to avoid -0.01 artifacts
+      normalized.gpa = Math.min(4, Math.max(0, n));
+    } else {
+      normalized.gpa = null;
+    }
   }
   if (data.years_of_experience !== undefined) {
     const n = typeof data.years_of_experience === 'number' ? data.years_of_experience : parseInt(String(data.years_of_experience), 10);
