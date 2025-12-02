@@ -7,6 +7,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useRouter, useSearchParams } from "next/navigation";
+import { getAuthCallbackUrl } from "@/lib/url";
 
 const schema = z.object({
   email: z.string().email("Enter a valid email"),
@@ -117,7 +118,7 @@ function SignInInner() {
               onClick={async () => {
                 setLoading(true);
                 try {
-                  const { error: resendError } = await supabase.auth.resend({ type: 'signup', email });
+                  const { error: resendError } = await supabase.auth.resend({ type: 'signup', email, options: { emailRedirectTo: getAuthCallbackUrl() } });
                   if (resendError) throw resendError;
                   setError("Confirmation email sent. Please check your inbox (and spam folder).");
                 } catch (e: any) {

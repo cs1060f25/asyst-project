@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { CompanySize } from "@/lib/types/database";
+import { getAuthCallbackUrl } from "@/lib/url";
 
 const schema = z.object({
   email: z.string().email("Enter a valid email"),
@@ -69,7 +70,7 @@ function RecruiterSignUpInner() {
         email, 
         password,
         options: {
-          emailRedirectTo: window.location.origin + '/recruiter',
+          emailRedirectTo: getAuthCallbackUrl(),
           data: {
             full_name: trimmedName,
             first_name: first_name || trimmedName,
