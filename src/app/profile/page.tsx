@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import type { FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -107,8 +108,7 @@ export default function ProfilePage() {
     eeo_disability_status: "",
     eeo_prefer_not_to_say: null as boolean | null,
   });
-  const [candidateError, setCandidateError] = useState<string | null>(null);
-  const [candidateSaving, setCandidateSaving] = useState(false);
+  // Removed separate candidate error/loading state; unified under `error`/`saving`
 
   useEffect(() => {
     let mounted = true;
@@ -251,43 +251,69 @@ export default function ProfilePage() {
   const [languagesText, setLanguagesText] = useState("");
   const [frameworksText, setFrameworksText] = useState("");
 
-  async function saveCandidateProfile() {
-    setCandidateSaving(true);
-    setCandidateError(null);
+  
+
+  const canSave = useMemo(() => {
+    return (
+      profile.name.trim().length > 0 &&
+      /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(profile.email)
+    );
+  }, [profile.name, profile.email]);
+
+  async function handleSave(e?: FormEvent) {
+    if (e) e.preventDefault();
+    setSaving(true);
+    setError(null);
     try {
+      // Resolve shared/select-with-other values
       const resolvedSchool =
         candidate.school === "__other__" ? schoolOther : candidate.school;
       const resolvedDegree =
-        candidate.degree_level === "__other__"
-          ? degreeOther
-          : candidate.degree_level;
+        candidate.degree_level === "__other__" ? degreeOther : candidate.degree_level;
       const resolvedWorkAuth =
-        candidate.work_authorization === "__other__"
-          ? workAuthOther
-          : candidate.work_authorization;
+        candidate.work_authorization === "__other__" ? workAuthOther : candidate.work_authorization;
       const resolvedPronouns =
         candidate.pronouns === "__other__" ? pronounsOther : candidate.pronouns;
       const resolvedGender =
-        candidate.eeo_gender === "__other__"
-          ? genderOther
-          : candidate.eeo_gender;
+        candidate.eeo_gender === "__other__" ? genderOther : candidate.eeo_gender;
       const resolvedRace =
-        candidate.eeo_race_ethnicity === "__other__"
-          ? raceOther
-          : candidate.eeo_race_ethnicity;
+        candidate.eeo_race_ethnicity === "__other__" ? raceOther : candidate.eeo_race_ethnicity;
       const resolvedVeteran =
-        candidate.eeo_veteran_status === "__other__"
-          ? veteranOther
-          : candidate.eeo_veteran_status;
+        candidate.eeo_veteran_status === "__other__" ? veteranOther : candidate.eeo_veteran_status;
       const resolvedDisability =
-        candidate.eeo_disability_status === "__other__"
-          ? disabilityOther
-          : candidate.eeo_disability_status;
-      const resolvedMajor =
-        candidate.major === "__other__" ? majorOther : candidate.major;
+        candidate.eeo_disability_status === "__other__" ? disabilityOther : candidate.eeo_disability_status;
+      const resolvedMajor = candidate.major === "__other__" ? majorOther : candidate.major;
       const grad = (candidate.graduation_date || "").trim();
       const resolvedGrad = /^\d{4}-\d{2}$/.test(grad) ? `${grad}-01` : grad;
-      // Build a minimal update payload to avoid validating unrelated fields (e.g., offer_deadline)
+
+      // 1) Save core profile (name/email/education/offerDeadline)
+      let offerDeadlineIso: string | null = null;
+      if (profile.offerDeadline && /^\d{4}-\d{2}-\d{2}$/.test(profile.offerDeadline)) {
+        try {
+          offerDeadlineIso = new Date(`${profile.offerDeadline}T00:00:00.000Z`).toISOString();
+        } catch {
+          offerDeadlineIso = null;
+        }
+      }
+      const resProfile = await fetch("/api/profile", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: profile.name,
+          email: profile.email,
+          education: resolvedSchool || "",
+          offerDeadline: offerDeadlineIso,
+        }),
+      });
+      if (!resProfile.ok) {
+        const err = await resProfile.json().catch(() => ({}));
+        throw new Error(err.error || "Failed to save profile");
+      }
+      const updatedProfile = (await resProfile.json()) as Profile;
+      // Preserve existing resume since API returns resume: null
+      setProfile((prev) => ({ ...updatedProfile, resume: updatedProfile.resume ?? prev.resume }));
+
+      // 2) Save candidate professional details (only if authenticated)
       const payload: Record<string, unknown> = {
         // Links
         github_url: candidate.github_url || null,
@@ -303,7 +329,6 @@ export default function ProfilePage() {
         // Education & basics
         degree_level: resolvedDegree || null,
         school: resolvedSchool || null,
-        // Mirror education to School per request
         education: resolvedSchool || null,
         major: resolvedMajor || null,
         graduation_date: resolvedGrad || null,
@@ -315,9 +340,9 @@ export default function ProfilePage() {
             : Math.round(Number(candidate.gpa) * 100) / 100,
         years_of_experience:
           typeof candidate.years_of_experience === "number"
-            ? Math.trunc(candidate.years_of_experience)
-            : candidate.years_of_experience
-            ? Math.trunc(Number(candidate.years_of_experience))
+            ? Math.max(0, Math.round(candidate.years_of_experience))
+            : candidate.years_of_experience != null && candidate.years_of_experience !== ("" as any)
+            ? (() => { const n = Number(candidate.years_of_experience); return Number.isFinite(n) ? Math.max(0, Math.round(n)) : null; })()
             : null,
         // Work auth & preferences
         work_authorization: resolvedWorkAuth || null,
@@ -349,83 +374,29 @@ export default function ProfilePage() {
         eeo_veteran_status: resolvedVeteran || null,
         eeo_disability_status: resolvedDisability || null,
       };
-      // If prefer-not-to-say is selected, clear all EEO fields so it persists via server model
       if (candidate.eeo_prefer_not_to_say) {
         (payload as any).eeo_gender = null;
         (payload as any).eeo_race_ethnicity = null;
         (payload as any).eeo_veteran_status = null;
         (payload as any).eeo_disability_status = null;
       }
+
       const { data: sessionData } = await supabase.auth.getSession();
       const token = sessionData.session?.access_token;
-      const res = await fetch("/api/candidate-profile", {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify(payload),
-      });
-      const respJson = await res.json();
-      if (!res.ok)
-        throw new Error(respJson?.error || "Failed to save candidate profile");
-      setCandidate((prev: any) => ({ ...prev, ...respJson }));
-    } catch (e: any) {
-      setCandidateError(e?.message || "Failed to save candidate profile");
-    } finally {
-      setCandidateSaving(false);
-    }
-  }
-
-  const canSave = useMemo(() => {
-    return (
-      profile.name.trim().length > 0 &&
-      /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(profile.email)
-    );
-  }, [profile.name, profile.email]);
-
-  async function handleSave() {
-    setSaving(true);
-    setError(null);
-    try {
-      const resolvedSchool =
-        candidate.school === "__other__" ? schoolOther : candidate.school;
-      // Do not sync offer deadline to candidate-profile here; it's managed separately via /api/profile
-      const res = await fetch("/api/profile", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: profile.name,
-          email: profile.email,
-          education: resolvedSchool || "",
-          offerDeadline: profile.offerDeadline,
-        }),
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || "Failed to save profile");
-      }
-      const data = (await res.json()) as Profile;
-      setProfile(data);
-      // Also persist School/Education and Major to candidate profile so saving from Basic Info updates Supabase too
-      try {
-        const resolvedMajor =
-          candidate.major === "__other__" ? majorOther : candidate.major;
-        const { data: sessionData } = await supabase.auth.getSession();
-        const token = sessionData.session?.access_token;
-        await fetch("/api/candidate-profile", {
+      if (token) {
+        const resCandidate = await fetch("/api/candidate-profile", {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify({
-            school: resolvedSchool || null,
-            education: resolvedSchool || null,
-            major: resolvedMajor || null,
-          }),
+          body: JSON.stringify(payload),
         });
-      } catch {}
+        const respJson = await resCandidate.json();
+        if (!resCandidate.ok)
+          throw new Error(respJson?.error || "Failed to save candidate profile");
+        setCandidate((prev: any) => ({ ...prev, ...respJson }));
+      }
     } catch (e: any) {
       setError(e.message || "Failed to save profile");
     } finally {
@@ -510,6 +481,7 @@ export default function ProfilePage() {
         </p>
       </div>
 
+      <form onSubmit={handleSave} className="space-y-8">
       {/* Basic Information Section */}
       <section className="bg-white rounded-xl border border-gray-200 p-6 sm:p-8 shadow-sm space-y-6">
         <div className="flex items-center gap-3 pb-2">
@@ -671,20 +643,7 @@ export default function ProfilePage() {
             your applications.
           </p>
         </div>
-        {error && (
-          <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-            <p className="text-sm text-red-600">{error}</p>
-          </div>
-        )}
-        <div className="pt-2">
-          <Button
-            onClick={handleSave}
-            disabled={!canSave || saving}
-            className="h-11 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold rounded-lg shadow-md hover:shadow-lg transition-all"
-          >
-            {saving ? "Saving..." : "Save Basic Info"}
-          </Button>
-        </div>
+        {/* Removed Basic Info save button; unified save at bottom */}
       </section>
 
       {/* Enhanced Candidate Profile Section */}
@@ -760,73 +719,7 @@ export default function ProfilePage() {
           />
         </div>
 
-        {/* Education & basics */}
-        <div className="grid gap-2">
-          <label className="text-sm font-medium">School</label>
-          <Select
-            value={
-              candidate.school &&
-              [
-                "Stanford University",
-                "MIT",
-                "UC Berkeley",
-                "Harvard University",
-                "Carnegie Mellon University",
-                "UIUC",
-                "Georgia Tech",
-              ].includes(candidate.school)
-                ? candidate.school
-                : candidate.school
-                ? "__other__"
-                : ""
-            }
-            onValueChange={(v) => {
-              if (v === "__other__") {
-                setCandidate((p: any) => ({ ...p, school: "__other__" }));
-                return;
-              }
-              setSchoolOther("");
-              setCandidate((p: any) => ({ ...p, school: v }));
-            }}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select school" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="Stanford University">
-                Stanford University
-              </SelectItem>
-              <SelectItem value="MIT">MIT</SelectItem>
-              <SelectItem value="UC Berkeley">UC Berkeley</SelectItem>
-              <SelectItem value="Harvard University">
-                Harvard University
-              </SelectItem>
-              <SelectItem value="Carnegie Mellon University">
-                Carnegie Mellon University
-              </SelectItem>
-              <SelectItem value="UIUC">UIUC</SelectItem>
-              <SelectItem value="Georgia Tech">Georgia Tech</SelectItem>
-              <SelectItem value="__other__">Other</SelectItem>
-            </SelectContent>
-          </Select>
-          {(candidate.school === "__other__" ||
-            (candidate.school &&
-              ![
-                "Stanford University",
-                "MIT",
-                "UC Berkeley",
-                "Harvard University",
-                "Carnegie Mellon University",
-                "UIUC",
-                "Georgia Tech",
-              ].includes(candidate.school))) && (
-            <Input
-              value={schoolOther}
-              onChange={(e) => setSchoolOther(e.target.value)}
-              placeholder="Enter school"
-            />
-          )}
-        </div>
+        {/* Education & basics: School field removed to avoid duplication with Basic Info section */}
         <div className="grid gap-2">
           <label className="text-sm font-medium">Degree Level</label>
           <Select
@@ -1547,21 +1440,22 @@ export default function ProfilePage() {
           <span className="text-sm">Prefer not to say</span>
         </div>
 
-        {candidateError && (
+        {error && (
           <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-            <p className="text-sm text-red-600">{candidateError}</p>
+            <p className="text-sm text-red-600">{error}</p>
           </div>
         )}
         <div className="pt-2">
           <Button
-            onClick={saveCandidateProfile}
-            disabled={candidateSaving}
+            type="submit"
+            disabled={!canSave || saving}
             className="h-11 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold rounded-lg shadow-md hover:shadow-lg transition-all"
           >
-            {candidateSaving ? "Saving..." : "Save Professional Details"}
+            {saving ? "Saving..." : "Save Profile"}
           </Button>
         </div>
       </section>
+      </form>
 
       {/* Resume Section */}
       <section className="bg-white rounded-xl border border-gray-200 p-6 sm:p-8 shadow-sm space-y-6">
