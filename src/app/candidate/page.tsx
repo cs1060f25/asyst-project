@@ -60,7 +60,25 @@ export default function CandidatePage() {
         const [jobsData, appsData] = await Promise.all([jobsRes.json(), appsRes.json()]);
         if (!mounted) return;
         setJobs(Array.isArray(jobsData) ? jobsData : []);
-        setApps(Array.isArray(appsData) ? appsData : []);
+        const normalizedApps = Array.isArray(appsData)
+          ? appsData.map((a: any) => ({
+              jobId: a?.jobId ?? a?.job_id ?? "",
+              status: ((): Application["status"] => {
+                const s = (a?.status ?? "").toString();
+                const map: Record<string, Application["status"]> = {
+                  applied: "Applied",
+                  under_review: "Under Review",
+                  interview: "Interview",
+                  offer: "Offer",
+                  hired: "Hired",
+                  rejected: "Rejected",
+                };
+                return (map[s] as Application["status"]) || (s as Application["status"]) || "Applied";
+              })(),
+              appliedAt: a?.appliedAt ?? a?.applied_at ?? new Date().toISOString(),
+            }))
+          : [];
+        setApps(normalizedApps);
       } catch (_) {
         // ignore
       } finally {
