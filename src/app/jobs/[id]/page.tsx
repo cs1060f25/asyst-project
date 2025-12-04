@@ -127,7 +127,12 @@ export default function JobDetailsPage() {
         .select('resume_url')
         .eq('user_id', user.id)
         .maybeSingle();
-
+      // Require resume before allowing single-click apply
+      if (!profile?.resume_url || typeof profile.resume_url !== 'string' || !profile.resume_url.trim()) {
+        setError("Please upload your resume in your Profile before applying.");
+        setSubmitting(false);
+        return;
+      }
       // If job has supplemental questions, validate required and include answers
       let supplementalPayload: Record<string, string> | undefined = undefined;
       if (job?.requirements && typeof job.requirements === 'object') {

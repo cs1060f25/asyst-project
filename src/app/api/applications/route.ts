@@ -126,6 +126,30 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // ===== STEP 2.5: For authenticated users, require resume in candidate profile and inject it =====
+    if (userId) {
+      const { data: profile, error: profileError } = await supabase
+        .from('candidate_profiles')
+        .select('resume_url')
+        .eq('user_id', userId)
+        .maybeSingle();
+      if (profileError) {
+        return NextResponse.json(
+          { error: "Failed to load profile", details: profileError.message },
+          { status: 500 }
+        );
+      }
+      const resumeFromProfile = profile?.resume_url;
+      if (!resumeFromProfile || typeof resumeFromProfile !== 'string' || !resumeFromProfile.trim()) {
+        return NextResponse.json(
+          { error: "Resume required", message: "Please add your resume in your profile before applying." },
+          { status: 400 }
+        );
+      }
+      // Force use of profile resume for authenticated flow
+      normalizedBody.resume_url = resumeFromProfile;
+    }
+
     // Validate payload
     const validationResult = ApplicationCreateSchema.safeParse(normalizedBody);
     if (!validationResult.success) {

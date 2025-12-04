@@ -26,6 +26,7 @@ export default function CandidatePage() {
   const [error, setError] = useState<string | null>(null);
   const [suppModalOpen, setSuppModalOpen] = useState(false);
   const [pendingJobForSupp, setPendingJobForSupp] = useState<string | null>(null);
+  const [profileResumeUrl, setProfileResumeUrl] = useState<string | null>(null);
 
   // Monitor authentication state and clear data on sign-out
   useEffect(() => {
@@ -71,6 +72,26 @@ export default function CandidatePage() {
     };
   }, []);
 
+  // Load candidate profile to check for resume_url
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
+        const res = await fetch('/api/candidate-profile', { cache: 'no-store' });
+        if (!active) return;
+        if (res.ok) {
+          const profile = await res.json();
+          setProfileResumeUrl((profile && profile.resume_url) || null);
+        } else {
+          setProfileResumeUrl(null);
+        }
+      } catch {
+        if (active) setProfileResumeUrl(null);
+      }
+    })();
+    return () => { active = false; };
+  }, []);
+
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return jobs;
@@ -103,6 +124,11 @@ export default function CandidatePage() {
     setError(null);
     
     try {
+      // Require resume before single-click apply
+      if (!profileResumeUrl) {
+        setError("Please upload your resume in your Profile before applying.");
+        return;
+      }
       // Check if job has supplemental questions (use fresh data to avoid stale cache)
       let job = jobs.find(j => j.id === jobId);
       if (!job || !Array.isArray(job.supplementalQuestions)) {
@@ -123,7 +149,7 @@ export default function CandidatePage() {
       const res = await fetch("/api/applications", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ jobId }),  // API will handle the format conversion
+        body: JSON.stringify({ jobId, resume_url: profileResumeUrl }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -167,6 +193,11 @@ export default function CandidatePage() {
           Candidate Dashboard
         </h1>
         <p className="text-base text-gray-600">Browse available jobs and apply in one click.</p>
+        {!profileResumeUrl && (
+          <div className="mt-2 text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-3 py-2">
+            Please upload your resume in your <Link href="/profile" className="underline font-medium">Profile</Link> to enable one-click apply.
+          </div>
+        )}
       </div>
 
       {/* Search Bar */}
@@ -196,6 +227,7 @@ export default function CandidatePage() {
         {filtered.map((job) => {
           const status = getStatus(job.id);
           const isApplied = !!status;
+          const resumeMissing = !profileResumeUrl;
           return (
             <div 
               key={job.id} 
@@ -229,11 +261,11 @@ export default function CandidatePage() {
                   ) : null}
                   <Button
                     onClick={() => apply(job.id)}
-                    disabled={isApplied || submitting === job.id}
+                    disabled={isApplied || submitting === job.id || resumeMissing}
                     className={isApplied ? "" : "bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-md hover:shadow-lg transition-all"}
                     size="default"
                   >
-                    {isApplied ? "✓ Applied" : submitting === job.id ? "Applying..." : "Apply Now"}
+                    {isApplied ? "✓ Applied" : submitting === job.id ? "Applying..." : resumeMissing ? "Add Resume in Profile" : "Apply Now"}
                   </Button>
                 </div>
               </div>
