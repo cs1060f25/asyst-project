@@ -75,6 +75,10 @@ function RecruiterSignUpInner() {
             full_name: trimmedName,
             first_name: first_name || trimmedName,
             last_name: last_name || "",
+            intended_role: "recruiter", // Store intended role for auto-profile creation
+            company_name: companyName.trim(),
+            job_title: jobTitle.trim(),
+            company_size: companySize || null,
           },
         }
       });

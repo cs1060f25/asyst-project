@@ -77,9 +77,74 @@ function SignInInner() {
         return;
       }
       
-      // No profile found - shouldn't happen, but redirect to role selection
+      // No profile found - check if this is a new user who just verified email
       console.warn("[Sign-in] No profile found for user:", userId);
-      router.push("/auth/role-selection");
+      
+      // Check intended role from metadata
+      const meta: any = data.user?.user_metadata || {};
+      const intendedRole = meta.intended_role || "candidate"; // Default to candidate
+      const firstName = typeof meta.first_name === 'string' ? meta.first_name.trim() : '';
+      const lastName = typeof meta.last_name === 'string' ? meta.last_name.trim() : '';
+      const fullName = typeof meta.full_name === 'string' ? meta.full_name.trim() : '';
+      const displayName = (firstName && lastName) ? `${firstName} ${lastName}` : (fullName || (data.user.email?.split("@")[0] || "User"));
+      
+      console.log("[Sign-in] Auto-creating profile for new user, role:", intendedRole);
+      
+      if (intendedRole === "recruiter") {
+        // Create recruiter profile with data from metadata
+        const { error: createError } = await supabase
+          .from('recruiter_profiles')
+          .insert({
+            user_id: userId,
+            name: displayName,
+            email: data.user.email ?? null,
+            company_name: meta.company_name || displayName,
+            job_title: meta.job_title || 'Recruiter',
+            company_size: meta.company_size || null,
+            phone: null,
+            linkedin_url: null,
+            company_website: null,
+          });
+        
+        if (createError) {
+          console.error("[Sign-in] Failed to auto-create recruiter profile:", createError);
+          router.push("/auth/role-selection");
+          return;
+        }
+        
+        console.log("[Sign-in] Recruiter profile created, redirecting to dashboard");
+        const redirect = search.get("redirect");
+        router.push(redirect && redirect.startsWith("/") ? redirect : "/recruiter");
+      } else {
+        // Create candidate profile (default)
+        const { error: createError } = await supabase
+          .from('candidate_profiles')
+          .insert({
+            user_id: userId,
+            name: displayName,
+            email: data.user.email ?? null,
+            phone: null,
+            education: null,
+            resume_url: null,
+            skills: [],
+            experience: [],
+            certifications: [],
+            linkedin_url: null,
+            github_url: null,
+            portfolio_url: null,
+            offer_deadline: null,
+          });
+        
+        if (createError) {
+          console.error("[Sign-in] Failed to auto-create candidate profile:", createError);
+          router.push("/auth/role-selection");
+          return;
+        }
+        
+        console.log("[Sign-in] Candidate profile created, redirecting to dashboard");
+        const redirect = search.get("redirect");
+        router.push(redirect && redirect.startsWith("/") ? redirect : "/candidate");
+      }
     } catch (err: any) {
       const msg = err?.message || "Sign-in failed";
       setError(msg);
