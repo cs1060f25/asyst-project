@@ -11,8 +11,23 @@ import type {
  * to ensure data quality before normalization and storage.
  */
 
-// Experience/Certification are simple string arrays in DB
-const StringArraySchema = z.array(z.string().max(1000)).max(200);
+// Structured WorkExperience object schema (YYYY-MM for dates)
+const WorkExperienceSchema = z.object({
+  company: z.string().min(1),
+  title: z.string().min(1),
+  start_date: z.string().regex(/^\d{4}-\d{2}$/,'Invalid YYYY-MM date'),
+  end_date: z.string().regex(/^\d{4}-\d{2}$/,'Invalid YYYY-MM date').nullable(),
+  // Allow empty description
+  description: z.string(),
+});
+
+// Structured Certification schema (YYYY-MM for dates; expiry can be null)
+const CertificationSchema = z.object({
+  name: z.string().min(1),
+  issuer: z.string().min(1),
+  date: z.string().regex(/^\d{4}-\d{2}$/,'Invalid YYYY-MM date'),
+  expiry: z.string().regex(/^\d{4}-\d{2}$/,'Invalid YYYY-MM date').nullable(),
+});
 
 // URL validation schema
 const UrlSchema = z.string().url('Invalid URL format').optional().or(z.literal(''));
@@ -33,7 +48,7 @@ const NameSchema = z.string().min(1, 'Name is required').max(100, 'Name too long
 const SkillsSchema = z.array(z.string().max(50, 'Skill name too long'))
   .max(50, 'Too many skills (max 50)');
 
-// Coercer for YYYY-MM or YYYY-MM-DD -> YYYY-MM-DD
+// Coercer for YYYY-MM, YYYY-MM-DD, or ISO datetime -> YYYY-MM-DD
 const YMDDateCoercer = z.preprocess((v) => {
   if (v == null) return null;
   if (typeof v !== 'string') return v;
@@ -41,6 +56,8 @@ const YMDDateCoercer = z.preprocess((v) => {
   if (!s) return null;
   // Accept YYYY-MM -> append -01
   if (/^\d{4}-\d{2}$/.test(s)) return `${s}-01`;
+  // Accept ISO datetime -> take date part
+  if (/^\d{4}-\d{2}-\d{2}T/.test(s)) return s.slice(0, 10);
   // If parseable, format to YYYY-MM-DD
   const d = new Date(s);
   if (!isNaN(d.getTime())) {
@@ -62,12 +79,19 @@ export const CandidateProfileInsertSchema = z.object({
   major: z.string().max(200).nullable().optional(),
   resume_url: UrlSchema.nullable().optional(),
   skills: SkillsSchema.optional(),
-  experience: StringArraySchema.optional(),
-  certifications: StringArraySchema.optional(),
+  experience: z.array(WorkExperienceSchema).max(20).optional(),
+  certifications: z.array(CertificationSchema).max(200).optional(),
   linkedin_url: UrlSchema.nullable().optional(),
   github_url: UrlSchema.nullable().optional(),
   portfolio_url: UrlSchema.nullable().optional(),
-  offer_deadline: z.string().regex(/^\d{4}-\d{2}-\d{2}$/,'Offer deadline must be in YYYY-MM-DD format').nullable().optional(),
+  offer_deadline: z.preprocess((v) => {
+    if (v == null) return null;
+    if (typeof v !== 'string') return v;
+    const s = v.trim();
+    if (!s) return null;
+    if (/^\d{4}-\d{2}-\d{2}T/.test(s)) return s.slice(0, 10);
+    return s;
+  }, z.string().regex(/^\d{4}-\d{2}-\d{2}$/,'Offer deadline must be in YYYY-MM-DD format')).nullable().optional(),
   // Voluntary EEO disclosures
   eeo_gender: z.string().max(50).nullable().optional(),
   eeo_race_ethnicity: z.string().max(100).nullable().optional(),
@@ -108,12 +132,19 @@ export const CandidateProfileUpdateSchema = z.object({
   major: z.string().max(200).nullable().optional(),
   resume_url: UrlSchema.nullable().optional(),
   skills: SkillsSchema.optional(),
-  experience: StringArraySchema.optional(),
-  certifications: StringArraySchema.optional(),
+  experience: z.array(WorkExperienceSchema).max(20).optional(),
+  certifications: z.array(CertificationSchema).max(200).optional(),
   linkedin_url: UrlSchema.nullable().optional(),
   github_url: UrlSchema.nullable().optional(),
   portfolio_url: UrlSchema.nullable().optional(),
-  offer_deadline: z.string().regex(/^\d{4}-\d{2}-\d{2}$/,'Offer deadline must be in YYYY-MM-DD format').nullable().optional(),
+  offer_deadline: z.preprocess((v) => {
+    if (v == null) return null;
+    if (typeof v !== 'string') return v;
+    const s = v.trim();
+    if (!s) return null;
+    if (/^\d{4}-\d{2}-\d{2}T/.test(s)) return s.slice(0, 10);
+    return s;
+  }, z.string().regex(/^\d{4}-\d{2}-\d{2}$/,'Offer deadline must be in YYYY-MM-DD format')).nullable().optional(),
   // Voluntary EEO disclosures
   eeo_gender: z.string().max(50).nullable().optional(),
   eeo_race_ethnicity: z.string().max(100).nullable().optional(),

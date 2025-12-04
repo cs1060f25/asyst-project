@@ -1,7 +1,9 @@
 import type { 
   CandidateProfile, 
   CandidateProfileInsert, 
-  CandidateProfileUpdate
+  CandidateProfileUpdate,
+  WorkExperience,
+  Certification
 } from '@/lib/types/database';
 import type { CandidateProfileInsertValidated, CandidateProfileUpdateValidated } from '@/lib/validation/candidate-schema';
 
@@ -141,6 +143,42 @@ export function normalizeExperienceStrings(experience: string[]): string[] {
   return [...new Set(experience.filter(x => typeof x === 'string').map(x => x.trim()).filter(Boolean))];
 }
 
+// Normalize YYYY-MM or wider date inputs to YYYY-MM
+export function normalizeDate(date: string): string {
+  if (!date || typeof date !== 'string') return '';
+  const trimmed = date.trim();
+  if (!trimmed) return '';
+  try {
+    const d = new Date(trimmed);
+    if (isNaN(d.getTime())) return '';
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    return `${y}-${m}`;
+  } catch {
+    return '';
+  }
+}
+
+// Normalize structured WorkExperience[]
+export function normalizeExperience(experience: WorkExperience[]): WorkExperience[] {
+  if (!Array.isArray(experience)) return [];
+  const toYYYYMM = (val: string | null): string | null => {
+    if (val == null || val === '') return val as any;
+    const n = normalizeDate(val);
+    return n || null;
+  };
+  return experience
+    .filter((e) => e && typeof e === 'object')
+    .map((e) => ({
+      company: (e.company || '').toString().trim(),
+      title: (e.title || '').toString().trim(),
+      start_date: toYYYYMM(e.start_date) || '',
+      end_date: toYYYYMM(e.end_date),
+      description: (e.description ?? '').toString().trim(),
+    }))
+    .filter((e) => !!e.company && !!e.title && !!e.start_date);
+}
+
 /**
  * Normalize certification data
  * @param certifications - Raw certifications array
@@ -149,6 +187,25 @@ export function normalizeExperienceStrings(experience: string[]): string[] {
 export function normalizeCertificationStrings(certifications: string[]): string[] {
   if (!Array.isArray(certifications)) return [];
   return [...new Set(certifications.filter(x => typeof x === 'string').map(x => x.trim()).filter(Boolean))];
+}
+
+// Normalize structured Certification[]
+export function normalizeCertifications(certs: Certification[]): Certification[] {
+  if (!Array.isArray(certs)) return [];
+  const toYYYYMM = (val: string | null): string | null => {
+    if (val == null || val === '') return val as any;
+    const n = normalizeDate(val);
+    return n || null;
+  };
+  return certs
+    .filter((c) => c && typeof c === 'object')
+    .map((c) => ({
+      name: (c.name || '').toString().trim(),
+      issuer: (c.issuer || '').toString().trim(),
+      date: toYYYYMM(c.date) || '',
+      expiry: toYYYYMM(c.expiry),
+    }))
+    .filter((c) => !!c.name && !!c.issuer && !!c.date);
 }
 
 /**
@@ -195,10 +252,7 @@ export function normalizeOfferDeadline(deadline: string): string | null {
   try {
     const d = new Date(trimmed);
     if (isNaN(d.getTime())) return null;
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${y}-${m}-${day}`;
+    return d.toISOString();
   } catch {
     return null;
   }
@@ -243,11 +297,22 @@ export function normalizeCandidateData<T extends Partial<CandidateProfileInsert>
   }
   
   if (data.experience !== undefined) {
-    normalized.experience = normalizeExperienceStrings(data.experience as unknown as string[]);
+    // Prefer structured normalization; fallback to strings if provided as such
+    const exp = (data.experience as unknown) as any[];
+    if (Array.isArray(exp) && exp.length && typeof exp[0] === 'object') {
+      normalized.experience = normalizeExperience(exp as WorkExperience[]);
+    } else {
+      normalized.experience = normalizeExperienceStrings(exp as unknown as string[]);
+    }
   }
   
   if (data.certifications !== undefined) {
-    normalized.certifications = normalizeCertificationStrings(data.certifications as unknown as string[]);
+    const certs = (data.certifications as unknown) as any[];
+    if (Array.isArray(certs) && certs.length && typeof certs[0] === 'object') {
+      normalized.certifications = normalizeCertifications(certs as Certification[]);
+    } else {
+      normalized.certifications = normalizeCertificationStrings(certs as unknown as string[]);
+    }
   }
   
   // Normalize URL fields
