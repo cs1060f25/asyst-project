@@ -1,7 +1,9 @@
 import type { 
   CandidateProfile, 
   CandidateProfileInsert, 
-  CandidateProfileUpdate 
+  CandidateProfileUpdate,
+  WorkExperience,
+  Certification,
 } from '@/lib/types/database';
 import { normalizeCandidateData } from './validation/candidate-normalizer';
 import { 
@@ -49,6 +51,54 @@ export async function saveCandidateProfile(
   
   // Step 2: Normalize the validated data
   const normalizedData = normalizeCandidateData(validatedData) as CandidateProfileInsertValidated;
+  // Convert possibly structured arrays to string[] for DB insert
+  const toExperienceStrings = (val: unknown): string[] => {
+    if (!Array.isArray(val)) return [];
+    const arr = val as unknown[];
+    const isWorkExpArray = (xs: unknown[]): xs is WorkExperience[] =>
+      xs.length === 0 || (typeof xs[0] === 'object' && xs[0] !== null && 'company' in (xs[0] as object) && 'title' in (xs[0] as object));
+    if (isWorkExpArray(arr)) {
+      return arr
+        .map((e) => {
+          const title = (e.title ?? '').toString().trim();
+          const company = (e.company ?? '').toString().trim();
+          const start = (e.start_date ?? '').toString().trim();
+          const end = (e.end_date ?? '').toString().trim();
+          const desc = (e.description ?? '').toString().trim();
+          const when = start ? `${start}${end ? ` - ${end}` : ''}` : '';
+          const head = [title, company].filter(Boolean).join(' @ ');
+          const tail = [when, desc].filter(Boolean).join(': ');
+          return [head, tail].filter(Boolean).join(' ');
+        })
+        .filter(Boolean);
+    }
+    // treat as string[]
+    return (arr as unknown[]).filter((x): x is string => typeof x === 'string');
+  };
+
+  const toCertificationStrings = (val: unknown): string[] => {
+    if (!Array.isArray(val)) return [];
+    const arr = val as unknown[];
+    const isCertArray = (xs: unknown[]): xs is Certification[] =>
+      xs.length === 0 || (typeof xs[0] === 'object' && xs[0] !== null && 'name' in (xs[0] as object) && 'issuer' in (xs[0] as object));
+    if (isCertArray(arr)) {
+      return arr
+        .map((c) => {
+          const name = (c.name ?? '').toString().trim();
+          const issuer = (c.issuer ?? '').toString().trim();
+          const date = (c.date ?? '').toString().trim();
+          const expiry = (c.expiry ?? '').toString().trim();
+          const when = date ? `${date}${expiry ? ` - ${expiry}` : ''}` : '';
+          const head = [name, issuer].filter(Boolean).join(' - ');
+          return [head, when].filter(Boolean).join(' ');
+        })
+        .filter(Boolean);
+    }
+    return (arr as unknown[]).filter((x): x is string => typeof x === 'string');
+  };
+
+  const experienceStrings = toExperienceStrings(normalizedData.experience);
+  const certificationStrings = toCertificationStrings(normalizedData.certifications);
   const forInsert: CandidateProfileInsert = {
     user_id: userId,
     name: normalizedData.name,
@@ -58,8 +108,8 @@ export async function saveCandidateProfile(
     major: normalizedData.major ?? null,
     resume_url: normalizedData.resume_url ?? null,
     skills: normalizedData.skills ?? [],
-    experience: normalizedData.experience ?? [],
-    certifications: normalizedData.certifications ?? [],
+    experience: experienceStrings,
+    certifications: certificationStrings,
     linkedin_url: normalizedData.linkedin_url ?? null,
     github_url: normalizedData.github_url ?? null,
     portfolio_url: normalizedData.portfolio_url ?? null,
@@ -155,6 +205,53 @@ export async function safeSaveCandidateProfile(
     
     // Step 2: Normalize the validated data
     const normalizedData = normalizeCandidateData(validationResult.data!) as CandidateProfileInsertValidated;
+    // Convert possibly structured arrays to string[]
+    const experienceStrings = ((): string[] => {
+      const val = normalizedData.experience as unknown;
+      if (!Array.isArray(val)) return [];
+      const xs = val as unknown[];
+      const isWorkExpArray = (arr: unknown[]): arr is WorkExperience[] =>
+        arr.length === 0 || (typeof arr[0] === 'object' && arr[0] !== null && 'company' in (arr[0] as object) && 'title' in (arr[0] as object));
+      if (isWorkExpArray(xs)) {
+        return xs
+          .map((e) => {
+            const title = (e.title ?? '').toString().trim();
+            const company = (e.company ?? '').toString().trim();
+            const start = (e.start_date ?? '').toString().trim();
+            const end = (e.end_date ?? '').toString().trim();
+            const desc = (e.description ?? '').toString().trim();
+            const when = start ? `${start}${end ? ` - ${end}` : ''}` : '';
+            const head = [title, company].filter(Boolean).join(' @ ');
+            const tail = [when, desc].filter(Boolean).join(': ');
+            return [head, tail].filter(Boolean).join(' ');
+          })
+          .filter(Boolean);
+      }
+      return xs.filter((x): x is string => typeof x === 'string');
+    })();
+
+    const certificationStrings = ((): string[] => {
+      const val = normalizedData.certifications as unknown;
+      if (!Array.isArray(val)) return [];
+      const xs = val as unknown[];
+      const isCertArray = (arr: unknown[]): arr is Certification[] =>
+        arr.length === 0 || (typeof arr[0] === 'object' && arr[0] !== null && 'name' in (arr[0] as object) && 'issuer' in (arr[0] as object));
+      if (isCertArray(xs)) {
+        return xs
+          .map((c) => {
+            const name = (c.name ?? '').toString().trim();
+            const issuer = (c.issuer ?? '').toString().trim();
+            const date = (c.date ?? '').toString().trim();
+            const expiry = (c.expiry ?? '').toString().trim();
+            const when = date ? `${date}${expiry ? ` - ${expiry}` : ''}` : '';
+            const head = [name, issuer].filter(Boolean).join(' - ');
+            return [head, when].filter(Boolean).join(' ');
+          })
+          .filter(Boolean);
+      }
+      return xs.filter((x): x is string => typeof x === 'string');
+    })();
+
     const forInsert: CandidateProfileInsert = {
       user_id: userId,
       name: normalizedData.name,
@@ -164,8 +261,8 @@ export async function safeSaveCandidateProfile(
       major: normalizedData.major ?? null,
       resume_url: normalizedData.resume_url ?? null,
       skills: normalizedData.skills ?? [],
-      experience: normalizedData.experience ?? [],
-      certifications: normalizedData.certifications ?? [],
+      experience: experienceStrings,
+      certifications: certificationStrings,
       linkedin_url: normalizedData.linkedin_url ?? null,
       github_url: normalizedData.github_url ?? null,
       portfolio_url: normalizedData.portfolio_url ?? null,
