@@ -291,9 +291,12 @@ export default function JobApplicationsPage() {
                 <div key={app.id} className="px-6 py-4 hover:bg-gray-50">
                   <div className="grid grid-cols-12 gap-4 items-center">
                     <div className="col-span-3">
-                      <div className="font-medium">
+                      <button
+                        onClick={() => router.push(`/recruiter/applications/${app.id}`)}
+                        className="font-medium text-left hover:text-blue-600 hover:underline transition-colors"
+                      >
                         {app.candidate?.name || "Anonymous"}
-                      </div>
+                      </button>
                       <div className="text-sm text-gray-500">
                         {app.candidate?.email || ""}
                       </div>
@@ -309,6 +312,7 @@ export default function JobApplicationsPage() {
                             target="_blank"
                             rel="noopener noreferrer"
                             className="text-xs text-blue-600 hover:underline"
+                            onClick={(e) => e.stopPropagation()}
                           >
                             Resume
                           </a>
@@ -319,6 +323,7 @@ export default function JobApplicationsPage() {
                             target="_blank"
                             rel="noopener noreferrer"
                             className="text-xs text-blue-600 hover:underline"
+                            onClick={(e) => e.stopPropagation()}
                           >
                             LinkedIn
                           </a>
@@ -329,6 +334,7 @@ export default function JobApplicationsPage() {
                             target="_blank"
                             rel="noopener noreferrer"
                             className="text-xs text-blue-600 hover:underline"
+                            onClick={(e) => e.stopPropagation()}
                           >
                             GitHub
                           </a>

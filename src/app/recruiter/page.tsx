@@ -307,7 +307,12 @@ export default function RecruiterPage() {
                 <div key={`${app.jobId}-${app.candidateInfo?.email || 'anonymous'}-${app.appliedAt}`} className="px-6 py-5 hover:bg-blue-50/50 transition-colors">
                   <div className="grid grid-cols-12 gap-4 items-center">
                     <div className="col-span-2">
-                      <div className="font-medium">{app.candidateInfo?.name || "Anonymous"}</div>
+                      <button
+                        onClick={() => router.push(`/recruiter/applications/${app.id}`)}
+                        className="font-medium text-left hover:text-blue-600 hover:underline transition-colors"
+                      >
+                        {app.candidateInfo?.name || "Anonymous"}
+                      </button>
                       <div className="text-sm text-gray-500">{app.candidateInfo?.email || ""}</div>
                       {app.candidateInfo?.resumeUrl && (
                         <a 
@@ -315,6 +320,7 @@ export default function RecruiterPage() {
                           target="_blank" 
                           rel="noopener noreferrer"
                           className="text-xs text-blue-600 hover:underline"
+                          onClick={(e) => e.stopPropagation()}
                         >
                           View Resume
                         </a>
