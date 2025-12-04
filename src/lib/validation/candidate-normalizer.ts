@@ -1,5 +1,4 @@
 import type { 
-  CandidateProfile, 
   CandidateProfileInsert, 
   CandidateProfileUpdate,
   WorkExperience,
@@ -163,7 +162,7 @@ export function normalizeDate(date: string): string {
 export function normalizeExperience(experience: WorkExperience[]): WorkExperience[] {
   if (!Array.isArray(experience)) return [];
   const toYYYYMM = (val: string | null): string | null => {
-    if (val == null || val === '') return val as any;
+    if (val == null || val === '') return val;
     const n = normalizeDate(val);
     return n || null;
   };
@@ -193,7 +192,7 @@ export function normalizeCertificationStrings(certifications: string[]): string[
 export function normalizeCertifications(certs: Certification[]): Certification[] {
   if (!Array.isArray(certs)) return [];
   const toYYYYMM = (val: string | null): string | null => {
-    if (val == null || val === '') return val as any;
+    if (val == null || val === '') return val;
     const n = normalizeDate(val);
     return n || null;
   };
@@ -298,20 +297,30 @@ export function normalizeCandidateData<T extends Partial<CandidateProfileInsert>
   
   if (data.experience !== undefined) {
     // Prefer structured normalization; fallback to strings if provided as such
-    const exp = (data.experience as unknown) as any[];
-    if (Array.isArray(exp) && exp.length && typeof exp[0] === 'object') {
-      normalized.experience = normalizeExperience(exp as WorkExperience[]);
+    const expUnknown = data.experience as unknown;
+    if (Array.isArray(expUnknown) && expUnknown.length > 0) {
+      const first = expUnknown[0];
+      if (typeof first === 'object' && first !== null) {
+        normalized.experience = normalizeExperience(expUnknown as WorkExperience[]);
+      } else {
+        normalized.experience = normalizeExperienceStrings(expUnknown as string[]);
+      }
     } else {
-      normalized.experience = normalizeExperienceStrings(exp as unknown as string[]);
+      normalized.experience = [];
     }
   }
   
   if (data.certifications !== undefined) {
-    const certs = (data.certifications as unknown) as any[];
-    if (Array.isArray(certs) && certs.length && typeof certs[0] === 'object') {
-      normalized.certifications = normalizeCertifications(certs as Certification[]);
+    const certsUnknown = data.certifications as unknown;
+    if (Array.isArray(certsUnknown) && certsUnknown.length > 0) {
+      const first = certsUnknown[0];
+      if (typeof first === 'object' && first !== null) {
+        normalized.certifications = normalizeCertifications(certsUnknown as Certification[]);
+      } else {
+        normalized.certifications = normalizeCertificationStrings(certsUnknown as string[]);
+      }
     } else {
-      normalized.certifications = normalizeCertificationStrings(certs as unknown as string[]);
+      normalized.certifications = [];
     }
   }
   

@@ -50,8 +50,24 @@ Automated tests cover validation helpers in `src/lib/storage.test.ts` (MIME type
 
 1. Install dependencies (Vitest):
    - `npm install`
-2. Run tests:
+2. Run all tests:
    - `npm run test`
+3. Run only unit tests:
+   - `npm run test:unit`
+   - Runs `src/**/*.test.ts`, excluding `*.integration.test.ts` and `src/lib/database.test.ts`.
+4. Run only integration/system tests:
+   - `npm run test:integration`
+   - Runs `src/**/*.integration.test.ts` and `src/lib/database.test.ts`.
+
+#### Integration test requirements
+
+- Integration suites use a real Supabase project via environment variables. Set:
+  - `NEXT_PUBLIC_SUPABASE_URL`
+  - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- Integration suites auto-skip if these are not set.
+- Current integration suites:
+  - `src/app/api/applications/route.integration.test.ts` (POST + GET applications via route handlers)
+  - `src/app/api/jobs/route.integration.test.ts` (GET open jobs via route handler)
 
 ### Using the Feature
 
